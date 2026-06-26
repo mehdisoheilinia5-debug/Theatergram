@@ -67,7 +67,23 @@ export function useTheaterCore(lang: 'fa' | 'en') {
       setIsAuthenticated(true);
       setUserProfile(prev => ({ ...prev, ...profile }));
       setEditForm(prev => ({ ...prev, ...profile }));
+    } else {
+      // اگر کاربر لاگین نکرده بود، یک کاربر مهمان بساز
+      const guestProfile = {
+        id: 'guest-' + Date.now(),
+        name: 'مهمان',
+        username: 'guest',
+        bio: 'کاربر مهمان',
+        avatar: '',
+        followers: 0,
+        following: 0
+      };
+      localStorage.setItem('tg_real_user_session', JSON.stringify(guestProfile));
+      setIsAuthenticated(true);
+      setUserProfile(guestProfile);
+      setEditForm(guestProfile);
     }
+
     const localFollows = localStorage.getItem('tg_followed_users');
     if (localFollows) {
       const parsed = JSON.parse(localFollows);
