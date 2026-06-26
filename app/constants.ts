@@ -8,3 +8,4 @@ export const categories = [
   { id: 'rehearsal', fa: 'تمرین صحنه', en: 'Rehearsal' },
   { id: 'theory', fa: 'نقد و تحلیل', en: 'Analysis' }
 ];
+
