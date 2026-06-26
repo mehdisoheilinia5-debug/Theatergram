@@ -39,7 +39,6 @@ export function useTheaterCore(lang: 'fa' | 'en') {
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editCaptionText, setEditCaptionText] = useState('');
 
-  // سیستم کامنت و لایک محلی پایدار
   const [commentsMap, setCommentsMap] = useState<Record<string, Comment[]>>({});
   const [likedPosts, setLikedPosts] = useState<string[]>([]);
   const [newCommentText, setNewCommentText] = useState('');
@@ -55,7 +54,6 @@ export function useTheaterCore(lang: 'fa' | 'en') {
     loadLocalPosts();
     fetchData();
     
-    // بارگذاری کامنت‌ها و لایک‌ها
     const savedComments = localStorage.getItem('tg_comments_map');
     if (savedComments) setCommentsMap(JSON.parse(savedComments));
     const savedLikes = localStorage.getItem('tg_liked_posts');
@@ -68,7 +66,6 @@ export function useTheaterCore(lang: 'fa' | 'en') {
       setUserProfile(prev => ({ ...prev, ...profile }));
       setEditForm(prev => ({ ...prev, ...profile }));
     } else {
-      // اگر کاربر لاگین نکرده بود، یک کاربر مهمان بساز
       const guestProfile = {
         id: 'guest-' + Date.now(),
         name: 'مهمان',
@@ -305,7 +302,6 @@ export function useTheaterCore(lang: 'fa' | 'en') {
     try { await supabase.from('theater_posts').update({ status }).eq('id', id); } catch (e) {}
   };
 
-  // تابع عملیاتی لایک
   const handleToggleLike = (postId: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     let updatedLikes = [...likedPosts];
@@ -318,13 +314,11 @@ export function useTheaterCore(lang: 'fa' | 'en') {
     localStorage.setItem('tg_liked_posts', JSON.stringify(updatedLikes));
   };
 
-  // تابع دریافت زنده تعداد لایک
   const getPostLikesCount = (post: any) => {
     const baseLikes = post.likes || 0;
     return likedPosts.includes(post.id) ? baseLikes + 1 : baseLikes;
   };
 
-  // تابع عملیاتی کامنت
   const handleAddComment = (postId: string) => {
     if (!newCommentText.trim()) return;
     const newComment: Comment = {
