@@ -1,5 +1,5 @@
 'use client';
-import { categories } from './constants';
+import { categories } from './config';
 import { useTheaterCore } from './useTheaterCore';
 
 export default function TheaterGramCore() {
