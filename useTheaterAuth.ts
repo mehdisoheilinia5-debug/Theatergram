@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-
+import { supabase } from './lib/supabase';
 export function useTheaterAuth(currentLang: 'fa' | 'en') {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
