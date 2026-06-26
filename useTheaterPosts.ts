@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-
+import { supabase } from './lib/supabase';
 export function useTheaterPosts(userProfile: any, currentLang: 'fa' | 'en', setAuthUserProfile: any) {
   const [posts, setPosts] = useState<any[]>([]);
   const [caption, setCaption] = useState('');
