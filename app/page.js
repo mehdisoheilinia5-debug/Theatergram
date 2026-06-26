@@ -5,4 +5,4 @@ export default function Page() {
       <p>در حال راه‌اندازی...</p>
     </div>
   );
-}
+} 
