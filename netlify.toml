@@ -3,4 +3,5 @@
   publish = ".next"
 
 [build.environment]
-  NODE_VERSION = "20.14.0"
+  NEXT_PUBLIC_SUPABASE_URL = "https://xxgggmdsmybatgtygahg.supabase.co"
+  NEXT_PUBLIC_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh4Z2dnbWRzbXliYXRndHlnYWhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyOTU3NzEsImV4cCI6MjA5Njg3MTc3MX0.2PjiCNrSKWOJc2J1vcLoa88aFWxk0ol7VgPK_mXj73A"
