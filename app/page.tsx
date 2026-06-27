@@ -51,6 +51,10 @@ export default function Page() {
   const [editBio, setEditBio] = useState('');
   const [editAvatar, setEditAvatar] = useState('');
 
+  // جابه‌جایی توابع به بالاترین بخش کامپوننت برای حل ارور اسکوپ در TypeScript
+  const toggleLang = () => setLang((prev) => (prev === 'fa' ? 'en' : 'fa'));
+  const toggleTheme = () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+
   useEffect(() => {
     initDatabase();
     loadData();
@@ -80,14 +84,13 @@ export default function Page() {
 
   const isAdmin = currentUser === 'mehdisoheilinia';
 
-  // سیستم ورود کاربران (رمز عبور پیش‌فرض: 1234)
+  // سیستم ورود کاربران
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (!usernameInput.trim()) return;
     
     const allUsers = JSON.parse(localStorage.getItem('tg_users') || '{}');
     
-    // اگر کاربر وجود نداشت، یک پروفایل پیش‌فرض برایش بساز
     if (!allUsers[usernameInput.toLowerCase()]) {
       allUsers[usernameInput.toLowerCase()] = {
         username: usernameInput.toLowerCase(),
