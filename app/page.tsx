@@ -77,8 +77,8 @@ export default function Page() {
 
   const loadData = () => {
     if (typeof window !== 'undefined') {
-      setPosts(JSON.parse(localStorage.getItem('tg_posts'] || '[]'));
-      setDbUsers(JSON.parse(localStorage.getItem('tg_users'] || '{}'));
+      setPosts(JSON.parse(localStorage.getItem('tg_posts') || '[]'));
+      setDbUsers(JSON.parse(localStorage.getItem('tg_users') || '{}'));
     }
   };
 
@@ -89,7 +89,7 @@ export default function Page() {
     e.preventDefault();
     if (!usernameInput.trim()) return;
     
-    const allUsers = JSON.parse(localStorage.getItem('tg_users'] || '{}'));
+    const allUsers = JSON.parse(localStorage.getItem('tg_users') || '{}');
     
     if (!allUsers[usernameInput.toLowerCase()]) {
       allUsers[usernameInput.toLowerCase()] = {
@@ -120,7 +120,7 @@ export default function Page() {
     e.preventDefault();
     if (!currentUser) return;
 
-    const allUsers = JSON.parse(localStorage.getItem('tg_users'] || '{}');
+    const allUsers = JSON.parse(localStorage.getItem('tg_users') || '{}');
     if (allUsers[currentUser]) {
       allUsers[currentUser].name = editName;
       allUsers[currentUser].bio = editBio;
@@ -135,7 +135,7 @@ export default function Page() {
     e.preventDefault();
     if (!postTitle.trim() || !currentUser) return;
 
-    const allPosts = JSON.parse(localStorage.getItem('tg_posts'] || '[]');
+    const allPosts = JSON.parse(localStorage.getItem('tg_posts') || '[]');
     const newPost = {
       id: Date.now().toString(),
       username: currentUser,
@@ -159,7 +159,7 @@ export default function Page() {
 
   const handleToggleLike = (postId: string) => {
     if (!currentUser) return;
-    const allPosts = JSON.parse(localStorage.getItem('tg_posts'] || '[]');
+    const allPosts = JSON.parse(localStorage.getItem('tg_posts') || '[]');
     const updated = allPosts.map((post: any) => {
       if (post.id === postId) {
         const hasLiked = post.likes.includes(currentUser);
@@ -176,7 +176,7 @@ export default function Page() {
   };
 
   const handleApprovePost = (postId: string) => {
-    const allPosts = JSON.parse(localStorage.getItem('tg_posts'] || '[]');
+    const allPosts = JSON.parse(localStorage.getItem('tg_posts') || '[]');
     const updated = allPosts.map((post: any) => {
       if (post.id === postId) {
         post.status = 'approved';
@@ -189,7 +189,7 @@ export default function Page() {
 
   const handleToggleFollow = (targetUsername: string) => {
     if (!currentUser) return;
-    const allUsers = JSON.parse(localStorage.getItem('tg_users'] || '{}');
+    const allUsers = JSON.parse(localStorage.getItem('tg_users') || '{}');
     if (!allUsers[currentUser] || !allUsers[targetUsername]) return;
 
     const isFollowing = allUsers[currentUser].following.includes(targetUsername);
