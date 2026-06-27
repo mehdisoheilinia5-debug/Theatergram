@@ -39,7 +39,6 @@ export function useTheaterCore(lang: 'fa' | 'en') {
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editCaptionText, setEditCaptionText] = useState('');
 
-  // سیستم کامنت و لایک محلی پایدار
   const [commentsMap, setCommentsMap] = useState<Record<string, Comment[]>>({});
   const [likedPosts, setLikedPosts] = useState<string[]>([]);
   const [newCommentText, setNewCommentText] = useState('');
@@ -51,30 +50,20 @@ export function useTheaterCore(lang: 'fa' | 'en') {
   const [followedUsers, setFollowedUsers] = useState<string[]>([]);
   const [targetProfileUser, setTargetProfileUser] = useState<any | null>(null);
 
-  // ====== بارگذاری دیتا از localStorage و supabase ======
   useEffect(() => {
-    // بارگذاری پست‌ها
     const savedPosts = localStorage.getItem('theatergram_posts');
     if (savedPosts) {
-      const parsedPosts = JSON.parse(savedPosts);
-      setPosts(parsedPosts);
+      setPosts(JSON.parse(savedPosts));
     } else {
       fetchData();
     }
 
-    // بارگذاری کامنت‌ها
     const savedComments = localStorage.getItem('theatergram_comments');
-    if (savedComments) {
-      setCommentsMap(JSON.parse(savedComments));
-    }
+    if (savedComments) setCommentsMap(JSON.parse(savedComments));
 
-    // بارگذاری لایک‌ها
     const savedLikes = localStorage.getItem('theatergram_likes');
-    if (savedLikes) {
-      setLikedPosts(JSON.parse(savedLikes));
-    }
+    if (savedLikes) setLikedPosts(JSON.parse(savedLikes));
 
-    // بارگذاری پروفایل کاربر
     const session = localStorage.getItem('theatergram_user');
     if (session) {
       const profile = JSON.parse(session);
@@ -82,7 +71,6 @@ export function useTheaterCore(lang: 'fa' | 'en') {
       setUserProfile(prev => ({ ...prev, ...profile }));
       setEditForm(prev => ({ ...prev, ...profile }));
     } else {
-      // کاربر مهمان (فقط برای تست)
       const guestProfile = {
         id: 'guest-' + Date.now(),
         name: 'مهمان',
@@ -98,7 +86,6 @@ export function useTheaterCore(lang: 'fa' | 'en') {
       setEditForm(guestProfile);
     }
 
-    // بارگذاری فالوها
     const savedFollows = localStorage.getItem('theatergram_follows');
     if (savedFollows) {
       const parsed = JSON.parse(savedFollows);
@@ -107,26 +94,18 @@ export function useTheaterCore(lang: 'fa' | 'en') {
     }
   }, []);
 
-  // ====== ذخیره خودکار در localStorage ======
   useEffect(() => {
-    if (posts.length > 0) {
-      localStorage.setItem('theatergram_posts', JSON.stringify(posts));
-    }
+    if (posts.length > 0) localStorage.setItem('theatergram_posts', JSON.stringify(posts));
   }, [posts]);
 
   useEffect(() => {
-    if (Object.keys(commentsMap).length > 0) {
-      localStorage.setItem('theatergram_comments', JSON.stringify(commentsMap));
-    }
+    if (Object.keys(commentsMap).length > 0) localStorage.setItem('theatergram_comments', JSON.stringify(commentsMap));
   }, [commentsMap]);
 
   useEffect(() => {
-    if (likedPosts.length > 0) {
-      localStorage.setItem('theatergram_likes', JSON.stringify(likedPosts));
-    }
+    if (likedPosts.length > 0) localStorage.setItem('theatergram_likes', JSON.stringify(likedPosts));
   }, [likedPosts]);
 
-  // ====== دریافت داده از Supabase ======
   const fetchData = async () => {
     try {
       if (!supabase) return;
@@ -144,13 +123,11 @@ export function useTheaterCore(lang: 'fa' | 'en') {
     }
   };
 
-  // ====== ذخیره پست‌ها در localStorage ======
   const savePosts = (updatedPosts: any[]) => {
     setPosts(updatedPosts);
     localStorage.setItem('theatergram_posts', JSON.stringify(updatedPosts));
   };
 
-  // ====== احراز هویت ======
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
@@ -169,33 +146,14 @@ export function useTheaterCore(lang: 'fa' | 'en') {
           setLoading(false);
           return;
         }
-
-        // تلاش برای ثبت در Supabase
         try {
           const { data: newUser } = await supabase
             .from('theater_users')
-            .insert([
-              { 
-                username: uName, 
-                password: authPassword, 
-                name: authName, 
-                bio: lang === 'fa' ? 'هنرمند تئاتر' : 'Theater Artist', 
-                avatar: '' 
-              }
-            ])
-            .select()
-            .single();
+            .insert([{ username: uName, password: authPassword, name: authName, bio: lang === 'fa' ? 'هنرمند تئاتر' : 'Theater Artist', avatar: '' }])
+            .select().single();
 
           if (newUser) {
-            const profileData = { 
-              id: newUser.id, 
-              name: newUser.name, 
-              username: newUser.username, 
-              bio: newUser.bio, 
-              avatar: newUser.avatar,
-              followers: 0,
-              following: 0
-            };
+            const profileData = { id: newUser.id, name: newUser.name, username: newUser.username, bio: newUser.bio, avatar: newUser.avatar, followers: 0, following: 0 };
             localStorage.setItem('theatergram_user', JSON.stringify(profileData));
             setUserProfile(prev => ({ ...prev, ...profileData }));
             setEditForm(prev => ({ ...prev, ...profileData }));
@@ -203,11 +161,8 @@ export function useTheaterCore(lang: 'fa' | 'en') {
             setLoading(false);
             return;
           }
-        } catch (e) {
-          // اگر Supabase در دسترس نبود، به حالت آفلاین برو
-        }
+        } catch (e) {}
       } else {
-        // حالت ورود
         try {
           const { data: user } = await supabase
             .from('theater_users')
@@ -217,15 +172,7 @@ export function useTheaterCore(lang: 'fa' | 'en') {
             .maybeSingle();
 
           if (user) {
-            const profileData = { 
-              id: user.id, 
-              name: user.name, 
-              username: user.username, 
-              bio: user.bio, 
-              avatar: user.avatar,
-              followers: 0,
-              following: 0
-            };
+            const profileData = { id: user.id, name: user.name, username: user.username, bio: user.bio, avatar: user.avatar, followers: 0, following: 0 };
             localStorage.setItem('theatergram_user', JSON.stringify(profileData));
             setUserProfile(prev => ({ ...prev, ...profileData }));
             setEditForm(prev => ({ ...prev, ...profileData }));
@@ -233,27 +180,20 @@ export function useTheaterCore(lang: 'fa' | 'en') {
             setLoading(false);
             return;
           }
-        } catch (e) {
-          // اگر Supabase در دسترس نبود
-        }
+        } catch (e) {}
       }
 
-      // ====== Fallback آفلاین ======
       const fallbackProfile = {
         id: uName === 'mehdisoheilinia' ? 'admin-id' : 'user-' + Date.now(),
         name: uName === 'mehdisoheilinia' ? 'Mehdi Soheilinia' : (authName || (lang === 'fa' ? 'هنرمند تئاتر' : 'Theater Artist')),
         username: uName,
         bio: uName === 'mehdisoheilinia' ? (lang === 'fa' ? 'کارگردان و بازیگر' : 'Director & Actor') : (lang === 'fa' ? 'عضو جامعه تئاتر' : 'Theater Member'),
-        avatar: '',
-        followers: 0,
-        following: 0
+        avatar: '', followers: 0, following: 0
       };
-      
       localStorage.setItem('theatergram_user', JSON.stringify(fallbackProfile));
       setUserProfile(prev => ({ ...prev, ...fallbackProfile }));
       setEditForm(prev => ({ ...prev, ...fallbackProfile }));
       setIsAuthenticated(true);
-
     } finally {
       setLoading(false);
     }
@@ -265,20 +205,14 @@ export function useTheaterCore(lang: 'fa' | 'en') {
     setIsMenuOpen(false);
   };
 
-  // ====== مدیریت فایل ======
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     setUploadError('');
-    
     if (file) {
-      // محدودیت حجم (۱۰ مگابایت)
       if (file.size > 10 * 1024 * 1024) {
         setUploadError(lang === 'fa' ? '❌ حجم فایل نباید بیش از ۱۰ مگابایت باشد.' : '❌ File size must not exceed 10MB.');
-        setSelectedFile(null);
-        setMediaName('');
         return;
       }
-
       if (file.type.startsWith('video/')) {
         const video = document.createElement('video');
         video.preload = 'metadata';
@@ -286,8 +220,6 @@ export function useTheaterCore(lang: 'fa' | 'en') {
           window.URL.revokeObjectURL(video.src);
           if (video.duration > 60) {
             setUploadError(lang === 'fa' ? '❌ مدت زمان ویدیو نمی‌تواند بیش از ۱ دقیقه باشد.' : '❌ Video cannot exceed 1 minute.');
-            setSelectedFile(null);
-            setMediaName('');
           } else {
             setSelectedFile(file);
             setMediaName(file.name);
@@ -299,13 +231,10 @@ export function useTheaterCore(lang: 'fa' | 'en') {
         setMediaName(file.name);
       } else {
         setUploadError(lang === 'fa' ? '❌ فرمت فایل پشتیبانی نمی‌شود.' : '❌ File format not supported.');
-        setSelectedFile(null);
-        setMediaName('');
       }
     }
   };
 
-  // ====== فالو/آنفالو ======
   const toggleFollowUser = (targetUsername: string) => {
     let updatedFollows = [...followedUsers];
     if (followedUsers.includes(targetUsername)) {
@@ -318,14 +247,8 @@ export function useTheaterCore(lang: 'fa' | 'en') {
     setUserProfile(prev => ({ ...prev, following: updatedFollows.length }));
   };
 
-  // ====== انتشار پست ======
   const handlePublish = async () => {
-    if (!caption && !selectedFile) {
-      setUploadError(lang === 'fa' ? 'لطفاً کپشن یا فایل را وارد کنید.' : 'Please enter a caption or file.');
-      return;
-    }
-    if (uploadError) return;
-
+    if (!caption && !selectedFile) return;
     setLoading(true);
     setUploadStatus(lang === 'fa' ? 'در حال ارسال...' : 'Sending...');
 
@@ -340,11 +263,7 @@ export function useTheaterCore(lang: 'fa' | 'en') {
 
     let finalMediaUrl = '';
     if (selectedFile) {
-      try {
-        finalMediaUrl = await convertToBase64(selectedFile);
-      } catch (err) {
-        finalMediaUrl = URL.createObjectURL(selectedFile);
-      }
+      try { finalMediaUrl = await convertToBase64(selectedFile); } catch (err) { finalMediaUrl = URL.createObjectURL(selectedFile); }
     }
 
     const newPost = {
@@ -360,71 +279,32 @@ export function useTheaterCore(lang: 'fa' | 'en') {
       avatar: userProfile.avatar || ''
     };
 
-    const updated = [newPost, ...posts];
-    savePosts(updated);
+    savePosts([newPost, ...posts]);
 
-    // ذخیره در Supabase (اگر در دسترس باشد)
     try {
-      await supabase
-        .from('theater_posts')
-        .insert([{ 
-          caption, 
-          video_url: finalMediaUrl, 
-          likes: 0, 
-          artist_name: userProfile.name, 
-          username: userProfile.username, 
-          category: postCategory, 
-          status: 'pending',
-          avatar: userProfile.avatar || ''
-        }]);
-    } catch (err) {
-      // آفلاین - فقط در localStorage ذخیره شد
-    }
+      await supabase.from('theater_posts').insert([{ caption, video_url: finalMediaUrl, likes: 0, artist_name: userProfile.name, username: userProfile.username, category: postCategory, status: 'pending', avatar: userProfile.avatar || '' }]);
+    } catch (err) {}
 
-    setCaption('');
-    setSelectedFile(null);
-    setMediaName('');
-    setUploadError('');
+    setCaption(''); setSelectedFile(null); setMediaName('');
     setUploadStatus(lang === 'fa' ? '✓ با موفقیت ارسال شد.' : '✓ Sent successfully.');
     setLoading(false);
     setTimeout(() => setUploadStatus(''), 3000);
   };
 
-  // ====== حذف پست ======
   const handleDeletePost = async (id: string) => {
-    if (!confirm(lang === 'fa' ? 'آیا از حذف این پست مطمئن هستید؟' : 'Are you sure you want to delete this post?')) return;
-
-    const updated = posts.filter(p => p.id !== id);
-    savePosts(updated);
-
-    try {
-      await supabase.from('theater_posts').delete().eq('id', id);
-    } catch (e) {}
-
-    if (selectedDetailPost && selectedDetailPost.id === id) {
-      setSelectedDetailPost(null);
-    }
+    if (!confirm(lang === 'fa' ? 'آیا از حذف این پست مطمئن هستید؟' : 'Are you sure?')) return;
+    savePosts(posts.filter(p => p.id !== id));
+    try { await supabase.from('theater_posts').delete().eq('id', id); } catch (e) {}
+    if (selectedDetailPost && selectedDetailPost.id === id) setSelectedDetailPost(null);
   };
 
-  // ====== ویرایش پست ======
   const handleSavePostEdit = async (id: string) => {
-    const updated = posts.map(p => 
-      p.id === id ? { ...p, caption: editCaptionText } : p
-    );
-    savePosts(updated);
-    setEditingPostId(null);
-    setEditCaptionText('');
-
-    try {
-      await supabase.from('theater_posts').update({ caption: editCaptionText }).eq('id', id);
-    } catch (e) {}
-
-    if (selectedDetailPost && selectedDetailPost.id === id) {
-      setSelectedDetailPost((prev: any) => ({ ...prev, caption: editCaptionText }));
-    }
+    savePosts(posts.map(p => p.id === id ? { ...p, caption: editCaptionText } : p));
+    setEditingPostId(null); setEditCaptionText('');
+    try { await supabase.from('theater_posts').update({ caption: editCaptionText }).eq('id', id); } catch (e) {}
+    if (selectedDetailPost && selectedDetailPost.id === id) setSelectedDetailPost((prev: any) => ({ ...prev, caption: editCaptionText }));
   };
 
-  // ====== تغییر عکس پروفایل ======
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -432,7 +312,6 @@ export function useTheaterCore(lang: 'fa' | 'en') {
       reader.onloadend = () => {
         const avatarData = reader.result as string;
         setEditForm(prev => ({ ...prev, avatar: avatarData }));
-        // ذخیره سریع در localStorage
         const updatedProfile = { ...userProfile, avatar: avatarData };
         localStorage.setItem('theatergram_user', JSON.stringify(updatedProfile));
         setUserProfile(updatedProfile);
@@ -441,7 +320,6 @@ export function useTheaterCore(lang: 'fa' | 'en') {
     }
   };
 
-  // ====== ذخیره پروفایل ======
   const handleSaveProfile = () => {
     const updatedProfile = { ...userProfile, ...editForm };
     setUserProfile(updatedProfile);
@@ -449,140 +327,47 @@ export function useTheaterCore(lang: 'fa' | 'en') {
     setIsEditingProfile(false);
   };
 
-  // ====== تایید/رد پست توسط ادمین ======
   const handleUpdateStatus = async (id: string, status: 'approved' | 'rejected') => {
     const updated = posts.map(p => p.id === id ? { ...p, status } : p);
-    const filtered = updated.filter(p => p.status !== 'rejected');
-    savePosts(filtered);
-
-    try {
-      await supabase.from('theater_posts').update({ status }).eq('id', id);
-    } catch (e) {}
+    savePosts(updated.filter(p => p.status !== 'rejected'));
+    try { await supabase.from('theater_posts').update({ status }).eq('id', id); } catch (e) {}
   };
 
-  // ====== لایک ======
   const handleToggleLike = (postId: string) => {
     let updatedLikes = [...likedPosts];
-    if (likedPosts.includes(postId)) {
-      updatedLikes = updatedLikes.filter(id => id !== postId);
-    } else {
-      updatedLikes.push(postId);
-    }
+    const isLiked = likedPosts.includes(postId);
+    if (isLiked) { updatedLikes = updatedLikes.filter(id => id !== postId); } else { updatedLikes.push(postId); }
     setLikedPosts(updatedLikes);
     localStorage.setItem('theatergram_likes', JSON.stringify(updatedLikes));
 
-    // به‌روزرسانی تعداد لایک در پست
-    const updatedPosts = posts.map(p => {
-      if (p.id === postId) {
-        const isLiked = likedPosts.includes(postId);
-        return {
-          ...p,
-          likes: isLiked ? Math.max(0, (p.likes || 0) - 1) : (p.likes || 0) + 1
-        };
-      }
-      return p;
-    });
+    const updatedPosts = posts.map(p => p.id === postId ? { ...p, likes: isLiked ? Math.max(0, (p.likes || 0) - 1) : (p.likes || 0) + 1 } : p);
     savePosts(updatedPosts);
-
-    // به‌روزرسانی در Supabase
     try {
-      const newLikesCount = updatedPosts.find(p => p.id === postId)?.likes || 0;
-      supabase.from('theater_posts').update({ likes: newLikesCount }).eq('id', postId);
+      const cnt = updatedPosts.find(p => p.id === postId)?.likes || 0;
+      supabase.from('theater_posts').update({ likes: cnt }).eq('id', postId);
     } catch (e) {}
   };
 
-  const getPostLikesCount = (post: any) => {
-    return post.likes || 0;
-  };
-
-  // ====== کامنت ======
   const handleAddComment = (postId: string) => {
     if (!newCommentText.trim()) return;
-    
-    const newComment: Comment = {
-      id: Date.now().toString(),
-      username: userProfile.username,
-      artist_name: userProfile.name,
-      text: newCommentText.trim(),
-      timestamp: Date.now()
-    };
-
-    const updatedMap = {
-      ...commentsMap,
-      [postId]: [...(commentsMap[postId] || []), newComment]
-    };
+    const newComment = { id: Date.now().toString(), username: userProfile.username, artist_name: userProfile.name, text: newCommentText.trim(), timestamp: Date.now() };
+    const updatedMap = { ...commentsMap, [postId]: [...(commentsMap[postId] || []), newComment] };
     setCommentsMap(updatedMap);
     localStorage.setItem('theatergram_comments', JSON.stringify(updatedMap));
     setNewCommentText('');
   };
 
-  // ====== محاسبه پست‌های تایید شده ======
-  const approvedPosts = posts.filter(p => p.status === 'approved');
-  const pendingPosts = posts.filter(p => p.status === 'pending');
-  const isAdmin = userProfile.username === 'mehdisoheilinia';
-
   return {
-    // Auth
-    isAuthenticated,
-    authMode, setAuthMode,
-    authUsername, setAuthUsername,
-    authPassword, setAuthPassword,
-    authName, setAuthName,
-    authError, setAuthError,
-    handleAuth,
-    handleLogout,
-
-    // UI
-    activeTab, setActiveTab,
-    isDarkMode, setIsDarkMode,
-    currentLang, setCurrentLang,
-    isMenuOpen, setIsMenuOpen,
-    isEditingProfile, setIsEditingProfile,
-
-    // Posts
-    posts,
-    caption, setCaption,
-    selectedFile,
-    mediaName,
-    postCategory, setPostCategory,
-    loading,
-    uploadStatus,
-    uploadError,
-    handleFileChange,
-    handlePublish,
-    handleDeletePost,
-    handleSavePostEdit,
-    editingPostId, setEditingPostId,
-    editCaptionText, setEditCaptionText,
-
-    // Filters
-    searchQuery, setSearchQuery,
-    selectedCategoryFilter, setSelectedCategoryFilter,
-    selectedDetailPost, setSelectedDetailPost,
-
-    // Profile
-    userProfile,
-    editForm, setEditForm,
-    followedUsers,
-    targetProfileUser, setTargetProfileUser,
-    handleAvatarChange,
-    handleSaveProfile,
-    toggleFollowUser,
-
-    // Admin
-    isAdmin,
-    handleUpdateStatus,
-
-    // Computed
-    approvedPosts,
-    pendingPosts,
-
-    // Comments & Likes
-    commentsMap,
-    likedPosts,
-    newCommentText, setNewCommentText,
-    handleToggleLike,
-    getPostLikesCount,
-    handleAddComment
+    isAuthenticated, authMode, setAuthMode, authUsername, setAuthUsername, authPassword, setAuthPassword, authName, setAuthName, authError, setAuthError, handleAuth, handleLogout,
+    activeTab, setActiveTab, isDarkMode, setIsDarkMode, currentLang, setCurrentLang, isMenuOpen, setIsMenuOpen, isEditingProfile, setIsEditingProfile,
+    posts, caption, setCaption, selectedFile, mediaName, postCategory, setPostCategory, loading, uploadStatus, uploadError, handleFileChange, handlePublish, handleDeletePost, handleSavePostEdit, editingPostId, setEditingPostId, editCaptionText, setEditCaptionText,
+    searchQuery, setSearchQuery, selectedCategoryFilter, setSelectedCategoryFilter, selectedDetailPost, setSelectedDetailPost,
+    userProfile, editForm, setEditForm, followedUsers, targetProfileUser, setTargetProfileUser, handleAvatarChange, handleSaveProfile, toggleFollowUser,
+    isAdmin, handleUpdateStatus,
+    approvedPosts: posts.filter(p => p.status === 'approved'),
+    pendingPosts: posts.filter(p => p.status === 'pending'),
+    myApprovedPosts: posts.filter(p => p.status === 'approved' && p.username === userProfile.username),
+    myAllPosts: posts.filter(p => p.username === userProfile.username),
+    commentsMap, likedPosts, newCommentText, setNewCommentText, handleToggleLike, getPostLikesCount: (p: any) => p.likes || 0, handleAddComment
   };
 }
