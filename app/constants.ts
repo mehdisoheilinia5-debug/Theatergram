@@ -1,4 +1,3 @@
-// تایپ مربوط به پست‌ها (اتودها)
 export interface EtudePost {
   id: string;
   username: string;
@@ -13,7 +12,6 @@ export interface EtudePost {
   created_at: string;
 }
 
-// تایپ مربوط به پروفایل کاربران (که ارور داده بود)
 export interface UserProfile {
   username: string;
   name?: string;
@@ -24,7 +22,6 @@ export interface UserProfile {
   updated_at?: string;
 }
 
-// دسته‌بندی‌های تئاتر و سینما
 export const CATEGORIES = [
   { id: 'improvisation', fa: 'بداهه‌پردازی', en: 'Improvisation' },
   { id: 'monologue', fa: 'مونولوگ', en: 'Monologue' },
@@ -33,50 +30,63 @@ export const CATEGORIES = [
   { id: 'reading', fa: 'نمایشنامه‌خوانی', en: 'Play Reading' }
 ];
 
-// ترجمه‌های پلتفرم برای سیستم دو زبانه
 export const TRANSLATIONS = {
   fa: {
     explore: 'اکسپلور',
-    profile: 'پروفایل هنرمند',
-    admin: 'میز مدیریت',
+    profile: 'پروفایل',
+    admin: 'مدیریت',
+    about: 'درباره برنامه',
     noPosts: 'هنوز هیچ اتودی منتشر نشده است.',
     followers: 'دنبال‌کننده',
     following: 'دنبال‌شونده',
-    etudesCount: 'اتودها',
-    saveProfile: 'تنظیمات پروفایل کاربری',
-    displayName: 'نام هنری',
-    bio: 'بیوگرافی کوتاه',
-    uploadTitle: 'ارسال اتود جدید به پلتفرم',
-    titlePlaceholder: 'عنوان اتود یا تمرین...',
-    descPlaceholder: 'توضیحات، رویکرد یا متن اجرا...',
-    uploadMedia: 'فایل ویدیویی اتود خود را انتخاب کنید (فرمت MP4)',
-    submitPost: 'ارسال جهت بررسی و تایید ادمین',
-    pendingQueue: 'صف بررسی اتودهای دریافتی',
+    etudesCount: 'پست‌ها',
+    saveProfile: 'ویرایش پروفایل',
+    displayName: 'نام نمایش داده شده',
+    bio: 'بیوگرافی',
+    uploadTitle: 'ایجاد پست جدید',
+    titlePlaceholder: 'عنوان اتود...',
+    descPlaceholder: 'توضیحات اتود...',
+    uploadMedia: 'انتخاب فیلم یا عکس از گالری',
+    submitPost: 'ارسال برای ادمین',
+    pendingQueue: 'صف بررسی ادمین',
     approve: 'تایید و انتشار',
-    reject: 'رد اتود',
-    comments: 'نظرات هنرمندان',
-    addComment: 'نوشتن دیدگاه...'
+    reject: 'حذف',
+    comments: 'نظرات',
+    addComment: 'نوشتن نظر...',
+    aboutText: 'تئاترگرام یک پلتفرم تخصصی و مدرن برای هنرمندان تئاتر و سینما است تا بتوانند اتودها، تمرین‌ها و اجراهای خود را به اشتراک بگذارند و با جامعه هنری در ارتباط باشند.',
+    close: 'بستن',
+    follow: 'دنبال کردن',
+    unfollow: 'لغو دنبال کردن',
+    searchPlaceholder: 'جستجوی نام کاربری...',
+    enterBtn: 'ورود به پلتفرم'
   },
   en: {
-    explore: 'Explore Feed',
-    profile: 'Artist Profile',
-    admin: 'Admin Desk',
-    noPosts: 'No etudes published yet.',
+    explore: 'Explore',
+    profile: 'Profile',
+    admin: 'Admin',
+    about: 'About',
+    noPosts: 'No posts published yet.',
     followers: 'Followers',
     following: 'Following',
-    etudesCount: 'Etudes',
-    saveProfile: 'Profile Configurations',
-    displayName: 'Artistic Name',
-    bio: 'Short Biography',
-    uploadTitle: 'Submit New Etude',
+    etudesCount: 'Posts',
+    saveProfile: 'Edit Profile',
+    displayName: 'Display Name',
+    bio: 'Biography',
+    uploadTitle: 'Create New Post',
     titlePlaceholder: 'Etude title...',
-    descPlaceholder: 'Description, approach, or text...',
-    uploadMedia: 'Select your etude video asset (MP4 format)',
-    submitPost: 'Submit for Admin Review',
-    pendingQueue: 'Pending Review Queue',
+    descPlaceholder: 'Etude description...',
+    uploadMedia: 'Choose video or photo from gallery',
+    submitPost: 'Send to Admin',
+    pendingQueue: 'Admin Review Queue',
     approve: 'Approve & Publish',
-    reject: 'Reject Etude',
-    comments: 'Artists Comments',
-    addComment: 'Add a comment...'
+    reject: 'Reject',
+    comments: 'Comments',
+    addComment: 'Add a comment...',
+    aboutText: 'TheaterGram is a premium, specialized platform for theater and cinema professionals to share their etudes, rehearsals, and performances with the artistic community.',
+    close: 'Close',
+    follow: 'Follow',
+    unfollow: 'Unfollow',
+    searchPlaceholder: 'Search username...',
+    enterBtn: 'Enter Platform'
   }
 };
