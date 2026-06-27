@@ -30,6 +30,7 @@ export function useTheaterCore(currentUser: string) {
   }, []);
 
   useEffect(() => {
+    if (!currentUser) return;
     fetchPosts();
     fetchProfiles();
 
@@ -47,7 +48,7 @@ export function useTheaterCore(currentUser: string) {
       supabase.removeChannel(postChannel);
       supabase.removeChannel(profileChannel);
     };
-  }, [fetchPosts, fetchProfiles]);
+  }, [currentUser, fetchPosts, fetchProfiles]);
 
   const uploadMediaAsset = async (file: File, bucket: 'media' | 'avatars' = 'media'): Promise<string | null> => {
     try {
@@ -63,13 +64,13 @@ export function useTheaterCore(currentUser: string) {
       const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
       return data.publicUrl;
     } catch (err) {
-      console.error('Upload Error:', err);
+      console.error('Storage Engine Fail:', err);
       return null;
     }
   };
 
   const createPost = async (title: string, description: string, category: string, mediaUrl: string): Promise<boolean> => {
-    const status = currentUser === 'mehdisoheilinia' ? 'approved' : 'pending';
+    // طبق دستور جدید: تمامی پست‌ها بدون استثنا (حتی خود ادمین) ابتدا به وضعیت pending می‌روند
     const { error } = await supabase.from('posts').insert([
       {
         username: currentUser,
@@ -77,7 +78,7 @@ export function useTheaterCore(currentUser: string) {
         description,
         category,
         media_url: mediaUrl,
-        status,
+        status: 'pending',
         likes: [],
         comments: [],
         created_at: new Date().toISOString()
