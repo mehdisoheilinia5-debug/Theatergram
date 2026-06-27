@@ -67,7 +67,7 @@ export function useTheaterCore(currentUser: string) {
       const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
       return data.publicUrl;
     } catch (err) {
-      console.error('Upload error:', err);
+      console.error('Storage Upload Pipeline failed:', err);
       return null;
     }
   };
@@ -162,7 +162,7 @@ export function useTheaterCore(currentUser: string) {
   };
 
   const rejectPost = async (postId: string) => {
-    await supabase.from('posts').update({ status: 'rejected' }).eq('id', postId);
+    await supabase.from('posts').delete().eq('id', postId);
     await fetchPosts();
   };
 
