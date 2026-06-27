@@ -1,655 +1,397 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useTheaterCore } from './useTheaterCore';
+import { CATEGORIES, TRANSLATIONS, EtudePost } from './constants';
 
-// ==========================================
-// ۱. سیستم مدیریت دیتابیس محلی (LocalStorage)
-// ==========================================
-const initDatabase = () => {
-  if (typeof window !== 'undefined') {
-    if (!localStorage.getItem('tg_users')) {
-      const defaultUsers = {
-        'mehdisoheilinia': { username: 'mehdisoheilinia', name: 'مهدی سهیلی‌نیا', role: 'admin', bio: 'کارگردان و بازیگر تئاتر', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150', followers: [], following: [] },
-        'user1': { username: 'user1', name: 'هنرمند نمونه', role: 'user', bio: 'عضو جامعه تئاتر', avatar: '', followers: [], following: [] },
-        'user2': { username: 'user2', name: 'بازیگر تئاتر', role: 'user', bio: 'علاقه‌مند به اتود و بداهه', avatar: '', followers: [], following: [] }
-      };
-      localStorage.setItem('tg_users', JSON.stringify(defaultUsers));
-    }
-    if (!localStorage.getItem('tg_posts')) {
-      localStorage.setItem('tg_posts', JSON.stringify([]));
-    }
-  }
-};
-
-// ==========================================
-// ۲. کامپوننت اصلی و یکپارچه فایل page.tsx
-// ==========================================
 export default function Page() {
-  // تنظیمات اصلی ساختاری
-  const [showSplash, setShowSplash] = useState(true);
-  const [lang, setLang] = useState<'fa' | 'en'>('fa');
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  
-  // سیستم احراز هویت و کاربران
   const [currentUser, setCurrentUser] = useState<string | null>(null);
   const [usernameInput, setUsernameInput] = useState('');
-  const [passwordInput, setPasswordInput] = useState('');
-
-  // بخش‌های مختلف برنامه
-  const [activeTab, setActiveTab] = useState('explore');
+  
+  const [lang, setLang] = useState<'fa' | 'en'>('fa');
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [activeTab, setActiveTab] = useState<'explore' | 'profile' | 'admin'>('explore');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [targetUser, setTargetUser] = useState<string | null>(null);
-  const [posts, setPosts] = useState<any[]>([]);
-  const [dbUsers, setDbUsers] = useState<any>({});
 
-  // فیلدهای فرم ارسال پست جدید
+  // Form Creation State Elements
   const [postTitle, setPostTitle] = useState('');
-  const [postCategory, setPostCategory] = useState('improvisation');
+  const [postDesc, setPostDesc] = useState('');
+  const [postCat, setPostCat] = useState('improvisation');
+  const [mediaFile, setMediaFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
 
-  // فیلدهای ویرایش پروفایل شخصی
+  // Profile Edit Form elements
   const [editName, setEditName] = useState('');
   const [editBio, setEditBio] = useState('');
   const [editAvatar, setEditAvatar] = useState('');
 
-  // جابه‌جایی توابع به بالاترین بخش کامپوننت برای حل ارور اسکوپ در TypeScript
-  const toggleLang = () => setLang((prev) => (prev === 'fa' ? 'en' : 'fa'));
-  const toggleTheme = () => setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
-
-  useEffect(() => {
-    initDatabase();
-    loadData();
-
-    // کاهش انیمیشن ورودی به ۱ ثانیه
-    const timer = setTimeout(() => {
-      setShowSplash(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // بارگذاری داده‌ها پس از ورود کاربر
-  useEffect(() => {
-    if (currentUser && dbUsers[currentUser]) {
-      setEditName(dbUsers[currentUser].name || '');
-      setEditBio(dbUsers[currentUser].bio || '');
-      setEditAvatar(dbUsers[currentUser].avatar || '');
-    }
-  }, [currentUser, dbUsers]);
-
-  const loadData = () => {
-    if (typeof window !== 'undefined') {
-      setPosts(JSON.parse(localStorage.getItem('tg_posts') || '[]'));
-      setDbUsers(JSON.parse(localStorage.getItem('tg_users') || '{}'));
-    }
-  };
-
-  const isAdmin = currentUser === 'mehdisoheilinia';
-
-  // سیستم ورود کاربران
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!usernameInput.trim()) return;
-    
-    const allUsers = JSON.parse(localStorage.getItem('tg_users') || '{}');
-    
-    if (!allUsers[usernameInput.toLowerCase()]) {
-      allUsers[usernameInput.toLowerCase()] = {
-        username: usernameInput.toLowerCase(),
-        name: usernameInput,
-        role: usernameInput.toLowerCase() === 'mehdisoheilinia' ? 'admin' : 'user',
-        bio: 'هنرمند تئاترگرام',
-        avatar: '',
-        followers: [],
-        following: []
-      };
-      localStorage.setItem('tg_users', JSON.stringify(allUsers));
-    }
-    
-    setCurrentUser(usernameInput.toLowerCase());
-    loadData();
-  };
-
-  const handleLogout = () => {
-    setCurrentUser(null);
-    setIsMenuOpen(false);
-    setActiveTab('explore');
-    setTargetUser(null);
-  };
-
-  // ذخیره اطلاعات پروفایل ادیت شده در دیتابیس محلی
-  const handleSaveProfile = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentUser) return;
-
-    const allUsers = JSON.parse(localStorage.getItem('tg_users') || '{}');
-    if (allUsers[currentUser]) {
-      allUsers[currentUser].name = editName;
-      allUsers[currentUser].bio = editBio;
-      allUsers[currentUser].avatar = editAvatar;
-      localStorage.setItem('tg_users', JSON.stringify(allUsers));
-      loadData();
-      alert(lang === 'fa' ? 'پروفایل با موفقیت ذخیره شد!' : 'Profile saved successfully!');
-    }
-  };
-
-  const handleCreatePost = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!postTitle.trim() || !currentUser) return;
-
-    const allPosts = JSON.parse(localStorage.getItem('tg_posts') || '[]');
-    const newPost = {
-      id: Date.now().toString(),
-      username: currentUser,
-      artist_name: dbUsers[currentUser]?.name || currentUser,
-      title: postTitle,
-      category: postCategory,
-      status: currentUser === 'mehdisoheilinia' ? 'approved' : 'pending',
-      likes: [],
-      createdAt: new Date().toISOString()
-    };
-
-    allPosts.unshift(newPost);
-    localStorage.setItem('tg_posts', JSON.stringify(allPosts));
-    setPostTitle('');
-    loadData();
-    alert(currentUser === 'mehdisoheilinia' 
-      ? (lang === 'fa' ? 'پست شما منتشر شد!' : 'Post published!') 
-      : (lang === 'fa' ? 'پست به صف بررسی ادمین ارسال شد.' : 'Sent to admin moderation queue.')
-    );
-  };
-
-  const handleToggleLike = (postId: string) => {
-    if (!currentUser) return;
-    const allPosts = JSON.parse(localStorage.getItem('tg_posts') || '[]');
-    const updated = allPosts.map((post: any) => {
-      if (post.id === postId) {
-        const hasLiked = post.likes.includes(currentUser);
-        if (hasLiked) {
-          post.likes = post.likes.filter((u: string) => u !== currentUser);
-        } else {
-          post.likes.push(currentUser);
-        }
-      }
-      return post;
-    });
-    localStorage.setItem('tg_posts', JSON.stringify(updated));
-    loadData();
-  };
-
-  const handleApprovePost = (postId: string) => {
-    const allPosts = JSON.parse(localStorage.getItem('tg_posts') || '[]');
-    const updated = allPosts.map((post: any) => {
-      if (post.id === postId) {
-        post.status = 'approved';
-      }
-      return post;
-    });
-    localStorage.setItem('tg_posts', JSON.stringify(updated));
-    loadData();
-  };
-
-  const handleToggleFollow = (targetUsername: string) => {
-    if (!currentUser) return;
-    const allUsers = JSON.parse(localStorage.getItem('tg_users') || '{}');
-    if (!allUsers[currentUser] || !allUsers[targetUsername]) return;
-
-    const isFollowing = allUsers[currentUser].following.includes(targetUsername);
-
-    if (isFollowing) {
-      allUsers[currentUser].following = allUsers[currentUser].following.filter((u: string) => u !== targetUsername);
-      allUsers[targetUsername].followers = allUsers[targetUsername].followers.filter((u: string) => u !== currentUser);
-    } else {
-      allUsers[currentUser].following.push(targetUsername);
-      allUsers[targetUsername].followers.push(currentUser);
-    }
-
-    localStorage.setItem('tg_users', JSON.stringify(allUsers));
-    loadData();
-  };
-
-  const approvedPosts = posts.filter(p => p.status === 'approved');
-  const pendingPosts = posts.filter(p => p.status === 'pending');
+  const core = useTheaterCore(currentUser || '');
 
   const isDark = theme === 'dark';
   const isFa = lang === 'fa';
+  const t = TRANSLATIONS[lang];
 
-  // لایه‌های رنگی سیستم روز و شب همراه با تایپ صریح جهت پاس کردن بیلد ری‌اکت و تایپ‌اسکریپت
-  const currentStyles: React.CSSProperties = {
-    ...styles.appContainer,
-    backgroundColor: isDark ? '#000000' : '#f5f7fb',
-    color: isDark ? '#ffffff' : '#1c1c1e',
-    direction: isFa ? 'rtl' : 'ltr'
+  // Colors Matrix
+  const colors = {
+    bg: isDark ? '#050505' : '#ffffff',
+    card: isDark ? '#121214' : '#f5f7fb',
+    text: isDark ? '#f5f5f7' : '#111111',
+    border: isDark ? '#1f1f23' : '#e5e5ea',
+    input: isDark ? '#1a1a1e' : '#ffffff',
+    accent: isDark ? '#ffffff' : '#000000',
+    meta: '#8e8e93'
   };
 
-  // رندر انیمیشن اسپلش اسکرین اول برنامه (۱ ثانیه)
-  if (showSplash) {
-    return (
-      <div style={{ ...styles.splashContainer, backgroundColor: isDark ? '#000' : '#fff' }}>
-        <h1 style={{ ...styles.splashText, color: isDark ? '#fff' : '#000' }}>theatergram</h1>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (currentUser && core.profiles[currentUser]) {
+      const p = core.profiles[currentUser];
+      setEditName(p.name || '');
+      setEditBio(p.bio || '');
+      setEditAvatar(p.avatar_url || '');
+    }
+  }, [currentUser, core.profiles]);
 
-  // نمای ورود به پلتفرم
+  const handleAuth = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (usernameInput.trim()) {
+      setCurrentUser(usernameInput.toLowerCase().trim());
+    }
+  };
+
+  const handlePostCreation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mediaFile || !postTitle.trim()) return;
+
+    setUploading(true);
+    const url = await core.uploadMediaAsset(mediaFile);
+    if (url) {
+      const success = await core.createPost(postTitle, postDesc, postCat, url);
+      if (success) {
+        setPostTitle('');
+        setPostDesc('');
+        setMediaFile(null);
+        alert(currentUser === 'mehdisoheilinia' ? 'Published!' : 'Submitted to Review Queue.');
+      }
+    }
+    setUploading(false);
+  };
+
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const success = await core.syncProfileState(editName, editBio, editAvatar);
+    if (success) alert('Profile updated successfully.');
+  };
+
+  // Filter Pipeline Processing Matrix
+  const approvedPosts = core.posts.filter(p => {
+    if (p.status !== 'approved') return false;
+    if (selectedCategory !== 'all' && p.category !== selectedCategory) return false;
+    if (searchQuery.trim() && !p.username.includes(searchQuery.toLowerCase())) return false;
+    return true;
+  });
+
+  const pendingPosts = core.posts.filter(p => p.status === 'pending');
+  const activeProfileUsername = targetUser || currentUser;
+  const activeProfileData = core.profiles[activeProfileUsername || ''];
+  const profilePosts = core.posts.filter(p => p.username === activeProfileUsername && (p.status === 'approved' || activeProfileUsername === currentUser));
+
+  // Shared Premium Styled Elements 
+  const glassHeaderStyle: React.CSSProperties = {
+    position: 'sticky', top: 0, zIndex: 200,
+    backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+    background: isDark ? 'rgba(5, 5, 5, 0.75)' : 'rgba(255, 255, 255, 0.75)',
+    borderBottom: `1px solid ${colors.border}`,
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    padding: '14px 20px', direction: isFa ? 'rtl' : 'ltr'
+  };
+
+  const glassNavStyle: React.CSSProperties = {
+    position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+    width: '100%', maxWidth: '480px', zIndex: 200,
+    backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+    background: isDark ? 'rgba(18, 18, 20, 0.8)' : 'rgba(245, 247, 251, 0.8)',
+    borderTop: `1px solid ${colors.border}`,
+    display: 'flex', justifyContent: 'space-around', padding: '12px 0'
+  };
+
   if (!currentUser) {
     return (
-      <div style={{ ...styles.loginWrapper, backgroundColor: isDark ? '#000' : '#f5f7fb', color: isDark ? '#fff' : '#000', direction: isFa ? 'rtl' : 'ltr' }}>
-        <form onSubmit={handleLogin} style={{ ...styles.loginCard, background: isDark ? '#121212' : '#fff', borderColor: isDark ? '#1c1c1e' : '#e5e5ea' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px', textAlign: 'center' }}>theatergram</h1>
-          <p style={{ fontSize: '13px', color: '#888', marginBottom: '24px', textAlign: 'center' }}>
-            {isFa ? 'شبکه اجتماعی تخصصی هنرهای نمایشی' : 'The Social Network for Theater Professionals'}
-          </p>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <input 
-              type="text" 
-              placeholder={isFa ? 'نام کاربری (مثلا: mehdisoheilinia)' : 'Username'} 
-              value={usernameInput}
-              onChange={(e) => setUsernameInput(e.target.value)}
-              style={{ ...styles.input, background: isDark ? '#1c1c1e' : '#f2f2f7', color: isDark ? '#fff' : '#000' }}
-              required
-            />
-            <input 
-              type="password" 
-              placeholder={isFa ? 'رمز عبور' : 'Password'} 
-              value={passwordInput}
-              onChange={(e) => setPasswordInput(e.target.value)}
-              style={{ ...styles.input, background: isDark ? '#1c1c1e' : '#f2f2f7', color: isDark ? '#fff' : '#000' }}
-            />
-            <button type="submit" style={{ ...styles.submitBtn, background: isDark ? '#fff' : '#007aff', color: isDark ? '#000' : '#fff' }}>
-              {isFa ? 'ورود به حساب کاربری' : 'Login'}
-            </button>
-          </div>
-
-          <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '10px' }}>
-            <button type="button" onClick={toggleLang} style={styles.inlineActionBtn}>🌐 {isFa ? 'English' : 'فارسی'}</button>
-            <button type="button" onClick={toggleTheme} style={styles.inlineActionBtn}>{isDark ? '☀️ روز' : '🌙 شب'}</button>
-          </div>
+      <div style={{ background: colors.bg, color: colors.text, minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
+        <form onSubmit={handleAuth} style={{ width: '100%', maxWidth: '360px', background: colors.card, border: `1px solid ${colors.border}`, padding: '32px', borderRadius: '16px', textAlign: 'center' }}>
+          <h1 style={{ fontSize: '32px', fontWeight: '900', letterSpacing: '-1px', marginBottom: '8px' }}>TheaterGram</h1>
+          <p style={{ color: colors.meta, fontSize: '13px', marginBottom: '28px' }}>Premium Network for Theatre Professionals</p>
+          <input 
+            type="text" 
+            placeholder="Enter Username" 
+            value={usernameInput}
+            onChange={(e) => setUsernameInput(e.target.value)}
+            style={{ width: '100%', padding: '12px', borderRadius: '8px', border: `1px solid ${colors.border}`, background: colors.input, color: colors.text, marginBottom: '16px', outline: 'none' }}
+            required
+          />
+          <button type="submit" style={{ width: '100%', padding: '12px', background: colors.accent, color: isDark ? '#000' : '#fff', fontWeight: 'bold', borderRadius: '8px', border: 'none', cursor: 'pointer' }}>Enter Platform</button>
         </form>
       </div>
     );
   }
 
   return (
-    <div style={currentStyles}>
-      {/* هدر بالایی برنامه */}
-      <header style={{ ...styles.header, borderBottomColor: isDark ? '#1c1c1e' : '#e5e5ea', backgroundColor: isDark ? '#000' : '#fff' }}>
-        {/* دکمه همبرگری که با تغییر زبان جابجا می‌شود */}
-        <button 
-          onClick={() => setIsMenuOpen(!isMenuOpen)} 
-          style={{ ...styles.menuToggleBtn, color: isDark ? '#fff' : '#000', order: isFa ? 0 : 2 }}
-        >
-          ☰
-        </button>
-        
-        <h1 style={{ ...styles.logo, order: 1 }} onClick={() => { setTargetUser(null); setActiveTab('explore'); }}>theatergram</h1>
-        
-        <div style={{ width: '32px', order: isFa ? 2 : 0 }} />
+    <div style={{ background: colors.bg, color: colors.text, minHeight: '100vh', direction: isFa ? 'rtl' : 'ltr', paddingBottom: '90px' }}>
+      
+      {/* Header element */}
+      <header style={glassHeaderStyle}>
+        <span style={{ fontWeight: '900', fontSize: '20px', cursor: 'pointer' }} onClick={() => { setTargetUser(null); setActiveTab('explore'); }}>TheaterGram</span>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <button onClick={() => setLang(l => l === 'fa' ? 'en' : 'fa')} style={{ background: 'none', border: 'none', color: colors.text, cursor: 'pointer', fontSize: '13px' }}>🌐 {isFa ? 'English' : 'فارسی'}</button>
+          <button onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} style={{ background: 'none', border: 'none', color: colors.text, cursor: 'pointer', fontSize: '13px' }}>{isDark ? '☀️' : '🌙'}</button>
+        </div>
       </header>
 
-      {/* منوی همبرگری کشویی متصل به ساید مخالف بر اساس زبان */}
-      {isMenuOpen && (
-        <div style={{ 
-          ...styles.drawerMenu, 
-          background: isDark ? '#121212' : '#ffffff',
-          boxShadow: isDark ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.1)',
-          borderLeft: isFa && isDark ? '1px solid #1c1c1e' : isFa ? '1px solid #e5e5ea' : 'none',
-          borderRight: !isFa && isDark ? '1px solid #1c1c1e' : !isFa ? '1px solid #e5e5ea' : 'none',
-          right: isFa ? 0 : 'auto',
-          left: !isFa ? 0 : 'auto'
-        }}>
-          <div style={{ padding: '20px', borderBottom: `1px solid ${isDark ? '#1c1c1e' : '#e5e5ea'}`, display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ ...styles.avatarCircle, backgroundImage: `url(${dbUsers[currentUser]?.avatar || 'https://via.placeholder.com/150'})` }} />
-            <div>
-              <div style={{ fontWeight: 'bold' }}>{dbUsers[currentUser]?.name}</div>
-              <div style={{ fontSize: '11px', color: '#888' }}>@{currentUser}</div>
+      {/* Primary Mobile Container Viewport Segment */}
+      <main style={{ maxWidth: '480px', margin: '0 auto', padding: '16px' }}>
+        
+        {activeTab === 'explore' && !targetUser && (
+          <div>
+            {/* Context Filters Engine controls */}
+            <div style={{ marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <input 
+                type="text"
+                placeholder={isFa ? '🔍 جستجوی هنرمند...' : '🔍 Search artist username...'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${colors.border}`, background: colors.input, color: colors.text, outline: 'none', fontSize: '13px' }}
+              />
+              <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
+                <button 
+                  onClick={() => setSelectedCategory('all')}
+                  style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '12px', border: `1px solid ${colors.border}`, background: selectedCategory === 'all' ? colors.accent : colors.card, color: selectedCategory === 'all' ? (isDark ? '#000' : '#fff') : colors.text, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                >
+                  {isFa ? 'همه اتودها' : 'All'}
+                </button>
+                {CATEGORIES.map(c => (
+                  <button
+                    key={c.id}
+                    onClick={() => setSelectedCategory(c.id)}
+                    style={{ padding: '6px 12px', borderRadius: '20px', fontSize: '12px', border: `1px solid ${colors.border}`, background: selectedCategory === c.id ? colors.accent : colors.card, color: selectedCategory === c.id ? (isDark ? '#000' : '#fff') : colors.text, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                  >
+                    {isFa ? c.fa : c.en}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Main Feed Container render stack */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {approvedPosts.length === 0 ? (
+                <p style={{ color: colors.meta, textAlign: 'center', marginTop: '40px', fontSize: '13px' }}>{t.noPosts}</p>
+              ) : (
+                approvedPosts.map(post => (
+                  <PostCard 
+                    key={post.id} 
+                    post={post} 
+                    colors={colors} 
+                    t={t} 
+                    isFa={isFa} 
+                    currentUser={currentUser} 
+                    onLike={() => core.toggleLike(post.id, post.likes)}
+                    onComment={(txt) => core.appendComment(post.id, post.comments, txt)}
+                    onUserClick={(uname) => setTargetUser(uname)}
+                  />
+                ))
+              )}
             </div>
           </div>
-          
-          <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', gap: '5px' }}>
-            <button onClick={toggleTheme} style={{ ...styles.menuLinkBtn, color: isDark ? '#fff' : '#000' }}>
-              {isDark ? '☀️ تم روز (Light Mode)' : '🌙 تم شب (Dark Mode)'}
-            </button>
-            <button onClick={toggleLang} style={{ ...styles.menuLinkBtn, color: isDark ? '#fff' : '#000' }}>
-              🌐 {isFa ? 'تغییر به English' : 'Switch to فارسی'}
-            </button>
-            <button onClick={() => { setActiveTab('profile'); setIsMenuOpen(false); }} style={{ ...styles.menuLinkBtn, color: isDark ? '#fff' : '#000' }}>
-              👤 {isFa ? 'ویرایش پروفایل' : 'Edit Profile'}
-            </button>
-            <hr style={{ border: 'none', borderTop: `1px solid ${isDark ? '#1c1c1e' : '#e5e5ea'}`, margin: '10px 0' }} />
-            <button onClick={handleLogout} style={{ ...styles.menuLinkBtn, color: '#ff3b30', fontWeight: 'bold' }}>
-              🚪 {isFa ? 'خروج از حساب' : 'Logout'}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* بستن منو با کلیک روی فضای خالی خارج منو */}
-      {isMenuOpen && <div style={styles.menuOverlay} onClick={() => setIsMenuOpen(false)} />}
-
-      {/* محتوای اصلی برنامه */}
-      <main style={styles.mainContent}>
-        {targetUser ? (
-          <ProfileSection 
-            user={dbUsers[targetUser]} 
-            currentUser={currentUser} 
-            posts={posts.filter(p => p.username === targetUser && p.status === 'approved')}
-            onFollowToggle={handleToggleFollow}
-            onBack={() => setTargetUser(null)}
-            isDark={isDark}
-            isFa={isFa}
-          />
-        ) : (
-          <>
-            {activeTab === 'explore' && (
-              <div style={styles.feedContainer}>
-                <h2 style={styles.sectionTitle}>{isFa ? '🧭 اکسپلور اتودها و بداهه‌پردازی‌ها' : '🧭 Explore Etudes & Improvisations'}</h2>
-                {approvedPosts.length === 0 ? (
-                  <p style={styles.emptyText}>{isFa ? 'هیچ اتودی هنوز منتشر نشده است.' : 'No etudes published yet.'}</p>
-                ) : (
-                  approvedPosts.map(post => (
-                    <PostCard 
-                      key={post.id} 
-                      post={post} 
-                      currentUser={currentUser} 
-                      onLike={handleToggleLike} 
-                      onUserClick={(uname) => setTargetUser(uname)}
-                      isDark={isDark}
-                      isFa={isFa}
-                    />
-                  ))
-                )}
-              </div>
-            )}
-
-            {activeTab === 'profile' && (
-              <div>
-                <ProfileSection 
-                  user={dbUsers[currentUser]} 
-                  currentUser={currentUser} 
-                  posts={posts.filter(p => p.username === currentUser)}
-                  onFollowToggle={handleToggleFollow}
-                  isOwn={true}
-                  isDark={isDark}
-                  isFa={isFa}
-                />
-                
-                {/* فرم ویرایش اطلاعات پروفایل زنده */}
-                <form onSubmit={handleSaveProfile} style={{ ...styles.postForm, background: isDark ? '#121212' : '#fff', borderColor: isDark ? '#1c1c1e' : '#e5e5ea' }}>
-                  <h3 style={{ fontSize: '14px', fontWeight: 'bold' }}>⚙️ {isFa ? 'تنظیمات و اطلاعات کاربری' : 'Profile Settings'}</h3>
-                  <input 
-                    type="text" 
-                    placeholder={isFa ? 'نام هنری نمایش' : 'Display Name'}
-                    value={editName} 
-                    onChange={(e) => setEditName(e.target.value)} 
-                    style={{ ...styles.input, background: isDark ? '#1c1c1e' : '#f2f2f7', color: isDark ? '#fff' : '#000' }}
-                  />
-                  <input 
-                    type="text" 
-                    placeholder={isFa ? 'بیوگرافی (کارگردان، نویسنده، بازیگر...)' : 'Biography'}
-                    value={editBio} 
-                    onChange={(e) => setEditBio(e.target.value)} 
-                    style={{ ...styles.input, background: isDark ? '#1c1c1e' : '#f2f2f7', color: isDark ? '#fff' : '#000' }}
-                  />
-                  <input 
-                    type="text" 
-                    placeholder={isFa ? 'آدرس URL عکس پروفایل' : 'Avatar URL'}
-                    value={editAvatar} 
-                    onChange={(e) => setEditAvatar(e.target.value)} 
-                    style={{ ...styles.input, background: isDark ? '#1c1c1e' : '#f2f2f7', color: isDark ? '#fff' : '#000' }}
-                  />
-                  <button type="submit" style={{ ...styles.submitBtn, background: '#007aff', color: '#fff' }}>
-                    💾 {isFa ? 'ذخیره تغییرات پروفایل' : 'Save Profile Data'}
-                  </button>
-                </form>
-
-                {/* فرم ارسال اتود جدید */}
-                <form onSubmit={handleCreatePost} style={{ ...styles.postForm, background: isDark ? '#121212' : '#fff', borderColor: isDark ? '#1c1c1e' : '#e5e5ea', marginTop: '16px' }}>
-                  <h3 style={{ fontSize: '14px', fontWeight: 'bold' }}>🎬 {isFa ? 'ثبت اتود یا تمرین جدید' : 'New Stage Etude'}</h3>
-                  <input 
-                    type="text" 
-                    placeholder={isFa ? 'عنوان اتود یا صحنه...' : 'Etude Title...'} 
-                    value={postTitle} 
-                    onChange={(e) => setPostTitle(e.target.value)} 
-                    style={{ ...styles.input, background: isDark ? '#1c1c1e' : '#f2f2f7', color: isDark ? '#fff' : '#000' }}
-                    required
-                  />
-                  <select 
-                    value={postCategory} 
-                    onChange={(e) => setPostCategory(e.target.value)} 
-                    style={{ ...styles.input, background: isDark ? '#1c1c1e' : '#f2f2f7', color: isDark ? '#fff' : '#000' }}
-                  >
-                    <option value="improvisation">{isFa ? 'بداهه‌پردازی' : 'Improvisation'}</option>
-                    <option value="rehearsal">{isFa ? 'تمرین صحنه' : 'Scene Rehearsal'}</option>
-                    <option value="educational">{isFa ? 'آموزشی' : 'Educational'}</option>
-                    <option value="etude">{isFa ? 'اتود کلاسی' : 'Class Etude'}</option>
-                  </select>
-                  <button type="submit" style={{ ...styles.submitBtn, background: isDark ? '#fff' : '#000', color: isDark ? '#000' : '#fff' }}>
-                    🚀 {isFa ? 'ارسال به پلتفرم تئاترگرام' : 'Publish to Platform'}
-                  </button>
-                </form>
-              </div>
-            )}
-
-            {activeTab === 'adminPanel' && isAdmin && (
-              <div style={styles.feedContainer}>
-                <h2 style={styles.sectionTitle}>📥 صندوق بررسی و تایید ادمین ({pendingPosts.length})</h2>
-                {pendingPosts.length === 0 ? (
-                  <p style={styles.emptyText}>{isFa ? 'هیچ پستی در صف تایید وجود ندارد.' : 'No posts pending approval.'}</p>
-                ) : (
-                  pendingPosts.map(post => (
-                    <div key={post.id} style={{ ...styles.adminCard, background: isDark ? '#1c1c1e' : '#fff', borderColor: isDark ? '#2c2c2e' : '#e5e5ea' }}>
-                      <div>
-                        <span style={{ color: '#00ffcc', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => setTargetUser(post.username)}>@{post.username}</span>
-                        <h4 style={{ margin: '4px 0', color: isDark ? '#fff' : '#000' }}>{post.title}</h4>
-                        <span style={styles.categoryBadge}>
-                          {post.category === 'improvisation' ? (isFa ? 'بداهه‌پردازی' : 'Improvisation') : post.category}
-                        </span>
-                      </div>
-                      <button onClick={() => handleApprovePost(post.id)} style={styles.approveBtn}>
-                        {isFa ? 'تایید و انتشار' : 'Approve'}
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </>
         )}
+
+        {/* Profile and Media Management Form segment rendering view */}
+        {(activeTab === 'profile' || targetUser) && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {targetUser && (
+              <button onClick={() => setTargetUser(null)} style={{ background: 'none', border: 'none', color: colors.meta, cursor: 'pointer', alignSelf: 'flex-start', fontSize: '13px' }}>
+                {isFa ? '← بازگشت به اکسپلور' : '← Back to Explore'}
+              </button>
+            )}
+            
+            {activeProfileData ? (
+              <div style={{ background: colors.card, border: `1px solid ${colors.border}`, padding: '24px', borderRadius: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '14px' }}>
+                  <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: colors.border, backgroundImage: `url(${activeProfileData.avatar_url})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                  <div>
+                    <h2 style={{ fontSize: '18px', fontWeight: 'bold' }}>{activeProfileData.name || activeProfileData.username}</h2>
+                    <p style={{ color: colors.meta, fontSize: '13px' }}>@{activeProfileData.username}</p>
+                  </div>
+                </div>
+                <p style={{ fontSize: '14px', lineHeight: '1.6', color: colors.text, marginBottom: '16px' }}>{activeProfileData.bio || '...'}</p>
+                
+                <div style={{ display: 'flex', gap: '20px', borderTop: `1px solid ${colors.border}`, paddingTop: '12px' }}>
+                  <div style={{ fontSize: '12px' }}><b style={{ color: colors.text }}>{activeProfileData.followers?.length || 0}</b> <span style={{ color: colors.meta }}>{t.followers}</span></div>
+                  <div style={{ fontSize: '12px' }}><b style={{ color: colors.text }}>{activeProfileData.following?.length || 0}</b> <span style={{ color: colors.meta }}>{t.following}</span></div>
+                  <div style={{ fontSize: '12px' }}><b style={{ color: colors.text }}>{profilePosts.length}</b> <span style={{ color: colors.meta }}>{t.etudesCount}</span></div>
+                </div>
+
+                {currentUser !== activeProfileUsername && (
+                  <button 
+                    onClick={() => core.toggleFollow(activeProfileUsername!)}
+                    style={{ marginTop: '14px', width: '100%', padding: '8px', background: activeProfileData.followers?.includes(currentUser) ? colors.input : colors.accent, color: activeProfileData.followers?.includes(currentUser) ? colors.text : (isDark ? '#000' : '#fff'), fontSize: '12px', fontWeight: 'bold', border: `1px solid ${colors.border}`, borderRadius: '6px', cursor: 'pointer' }}
+                  >
+                    {activeProfileData.followers?.includes(currentUser) ? 'Following' : 'Follow'}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <p style={{ color: colors.meta, textTransform: 'lowercase' }}>Initializing profile ledger metadata...</p>
+            )}
+
+            {/* Private User Creation Panels block */}
+            {currentUser === activeProfileUsername && (
+              <>
+                {/* Profile Editor form panel layout */}
+                <form onSubmit={handleUpdateProfile} style={{ background: colors.card, border: `1px solid ${colors.border}`, padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 'bold' }}>⚙️ {t.saveProfile}</h3>
+                  <input type="text" placeholder={t.displayName} value={editName} onChange={e => setEditName(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: `1px solid ${colors.border}`, background: colors.input, color: colors.text, outline: 'none', fontSize: '13px' }} />
+                  <input type="text" placeholder={t.bio} value={editBio} onChange={e => setEditBio(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: `1px solid ${colors.border}`, background: colors.input, color: colors.text, outline: 'none', fontSize: '13px' }} />
+                  <input type="text" placeholder="Avatar URL" value={editAvatar} onChange={e => setEditAvatar(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: `1px solid ${colors.border}`, background: colors.input, color: colors.text, outline: 'none', fontSize: '13px' }} />
+                  <button type="submit" style={{ padding: '10px', background: colors.accent, color: isDark ? '#000' : '#fff', fontWeight: 'bold', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '12px' }}>Update Profile</button>
+                </form>
+
+                {/* Upload Studio Segment */}
+                <form onSubmit={handlePostCreation} style={{ background: colors.card, border: `1px solid ${colors.border}`, padding: '20px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 'bold' }}>{t.uploadTitle}</h3>
+                  <input type="text" placeholder={t.titlePlaceholder} value={postTitle} onChange={e => setPostTitle(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: `1px solid ${colors.border}`, background: colors.input, color: colors.text, outline: 'none', fontSize: '13px' }} required />
+                  <textarea placeholder={t.descPlaceholder} value={postDesc} onChange={e => setPostDesc(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: `1px solid ${colors.border}`, background: colors.input, color: colors.text, outline: 'none', fontSize: '13px', minHeight: '60px', resize: 'vertical' }} />
+                  <select value={postCat} onChange={e => setPostCat(e.target.value)} style={{ padding: '10px', borderRadius: '6px', border: `1px solid ${colors.border}`, background: colors.input, color: colors.text, outline: 'none', fontSize: '13px' }}>
+                    {CATEGORIES.map(c => <option key={c.id} value={c.id}>{isFa ? c.fa : c.en}</option>)}
+                  </select>
+                  <div style={{ border: `1px dashed ${colors.border}`, padding: '16px', borderRadius: '6px', textAlign: 'center', background: colors.input }}>
+                    <input type="file" accept="video/*" onChange={e => setMediaFile(e.target.files?.[0] || null)} style={{ fontSize: '12px' }} required />
+                    <p style={{ fontSize: '11px', color: colors.meta, marginTop: '6px' }}>{t.uploadMedia}</p>
+                  </div>
+                  <button type="submit" disabled={uploading} style={{ padding: '10px', background: colors.accent, color: isDark ? '#000' : '#fff', fontWeight: 'bold', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '12px', opacity: uploading ? 0.5 : 1 }}>
+                    {uploading ? 'Uploading Asset Pipeline...' : t.submitPost}
+                  </button>
+                </form>
+              </>
+            )}
+
+            {/* Profile Portfolio Grid Archive display layout */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '10px' }}>
+              <h3 style={{ fontSize: '14px', fontWeight: 'bold', borderBottom: `1px solid ${colors.border}`, paddingBottom: '8px' }}>🎭 Video Portfolio ({profilePosts.length})</h3>
+              {profilePosts.map(post => (
+                <PostCard key={post.id} post={post} colors={colors} t={t} isFa={isFa} currentUser={currentUser} onLike={() => core.toggleLike(post.id, post.likes)} onComment={(txt) => core.appendComment(post.id, post.comments, txt)} onUserClick={(uname) => setTargetUser(uname)} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Master Admin Evaluation Processing Desk View panel routing */}
+        {activeTab === 'admin' && currentUser === 'mehdisoheilinia' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: 'bold' }}>{t.pendingQueue} ({pendingPosts.length})</h2>
+            {pendingPosts.length === 0 ? (
+              <p style={{ color: colors.meta, fontSize: '13px' }}>{t.noPosts}</p>
+            ) : (
+              pendingPosts.map(post => (
+                <div key={post.id} style={{ background: colors.card, border: `1px solid ${colors.border}`, padding: '16px', borderRadius: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+                    <b style={{ fontSize: '13px' }}>{post.title}</b>
+                    <span style={{ fontSize: '11px', color: colors.meta }}>@{post.username}</span>
+                  </div>
+                  <video src={post.media_url} controls style={{ width: '100%', borderRadius: '6px', maxHeight: '200px', background: '#000', marginBottom: '12px' }} />
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button onClick={() => core.approvePost(post.id)} style={{ flex: 1, padding: '8px', background: '#34c759', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px' }}>{t.approve}</button>
+                    <button onClick={() => core.rejectPost(post.id)} style={{ padding: '8px 16px', background: '#ff3b30', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px' }}>{t.reject}</button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
       </main>
 
-      {/* نوار ناوبری پایینی و فیکس شده */}
-      <nav style={{ ...styles.bottomNav, backgroundColor: isDark ? '#0a0a0a' : '#fff', borderTopColor: isDark ? '#1c1c1e' : '#e5e5ea' }}>
-        <button 
-          onClick={() => { setTargetUser(null); setActiveTab('explore'); }} 
-          style={{ ...styles.navBtn, color: activeTab === 'explore' && !targetUser ? (isDark ? '#fff' : '#007aff') : '#666' }}
-        >
-          🧭 {isFa ? 'اکسپلور' : 'Explore'}
-        </button>
-        <button 
-          onClick={() => { setTargetUser(null); setActiveTab('profile'); }} 
-          style={{ ...styles.navBtn, color: activeTab === 'profile' && !targetUser ? (isDark ? '#fff' : '#007aff') : '#666' }}
-        >
-          👤 {isFa ? 'پروفایل' : 'Profile'}
-        </button>
-        
-        {isAdmin && (
-          <button 
-            onClick={() => { setTargetUser(null); setActiveTab('adminPanel'); }} 
-            style={{ ...styles.navBtn, color: activeTab === 'adminPanel' && !targetUser ? '#00ffcc' : '#666' }}
-          >
-            ⚙️ {isFa ? 'مدیریت' : 'Admin'}
-          </button>
+      {/* Persistent Base Glassmorphism Docking Navigation System wrapper layout */}
+      <nav style={glassNavStyle}>
+        <button onClick={() => { setTargetUser(null); setActiveTab('explore'); }} style={{ background: 'none', border: 'none', color: activeTab === 'explore' && !targetUser ? colors.accent : colors.meta, fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>{t.explore}</button>
+        <button onClick={() => { setTargetUser(null); setActiveTab('profile'); }} style={{ background: 'none', border: 'none', color: activeTab === 'profile' && !targetUser ? colors.accent : colors.meta, fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>{t.profile}</button>
+        {currentUser === 'mehdisoheilinia' && (
+          <button onClick={() => { setTargetUser(null); setActiveTab('admin'); }} style={{ background: 'none', border: 'none', color: activeTab === 'admin' ? colors.accent : colors.meta, fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}>{t.admin}</button>
         )}
       </nav>
+
     </div>
   );
 }
 
-// ==========================================
-// ۳. کامپوننت فرعی کارت پست (PostCard)
-// ==========================================
-function PostCard({ post, currentUser, onLike, onUserClick, isDark, isFa }: any) {
-  const isLikedByMe = post.likes.includes(currentUser);
+// Sub-Component UI Card Controller Engine Block Interface
+function PostCard({ post, colors, t, isFa, currentUser, onLike, onComment, onUserClick }: { post: EtudePost; colors: any; t: any; isFa: boolean; currentUser: string; onLike: () => void; onComment: (text: string) => void; onUserClick: (uname: string) => void }) {
+  const [comInput, setComInput] = useState('');
+  const hasLiked = post.likes?.includes(currentUser);
+
+  const handleSubmitComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (comInput.trim()) {
+      onComment(comInput.trim());
+      setComInput('');
+    }
+  };
 
   return (
-    <div style={{ ...styles.postCard, background: isDark ? '#121212' : '#fff', borderColor: isDark ? '#1c1c1e' : '#e5e5ea' }}>
-      <div style={styles.cardHeader}>
-        <span onClick={() => onUserClick(post.username)} style={styles.cardUsername}>
-          @{post.username}
-        </span>
-        <span style={styles.cardBadge}>
-          {post.category === 'improvisation' ? (isFa ? 'بداهه‌پردازی' : 'Improvisation') : post.category}
-        </span>
-      </div>
-      <div style={{ ...styles.mediaPlaceholder, backgroundColor: isDark ? '#000' : '#f2f2f7', borderColor: isDark ? '#1c1c1e' : '#e5e5ea' }}>
-        <span style={{ color: '#888', fontSize: '13px' }}>🎬 ویدیو اتود تئاتر</span>
-      </div>
-      <p style={{ ...styles.cardTitle, color: isDark ? '#fff' : '#000', textAlign: isFa ? 'right' : 'left' }}>{post.title}</p>
-      <div style={styles.cardActions}>
-        <button 
-          onClick={() => onLike(post.id)} 
-          style={{ ...styles.likeBtn, background: isLikedByMe ? '#ff3b30' : (isDark ? '#262626' : '#e5e5ea'), color: isLikedByMe ? '#fff' : (isDark ? '#fff' : '#000') }}
-        >
-          {isLikedByMe ? '❤️' : '🤍'} {isFa ? 'لایک' : 'Like'}
-        </button>
-        <span style={styles.likeCount}>{post.likes.length} {isFa ? 'نفر' : 'likes'}</span>
-      </div>
-    </div>
-  );
-}
-
-// ==========================================
-// ۴. کامپوننت فرعی پروفایل کاربری (ProfileSection)
-// ==========================================
-function ProfileSection({ user, currentUser, posts, onFollowToggle, onBack, isOwn = false, isDark, isFa }: any) {
-  if (!user) return null;
-  const isFollowing = user.followers.includes(currentUser);
-
-  return (
-    <div style={{ ...styles.profileCard, background: isDark ? '#121212' : '#fff', borderColor: isDark ? '#1c1c1e' : '#e5e5ea' }}>
-      {onBack && <button onClick={onBack} style={styles.backBtn}>← {isFa ? 'بازگشت به اکسپلور' : 'Back to Explore'}</button>}
+    <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
       
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-        <div style={{ ...styles.avatarContainer, backgroundImage: `url(${user.avatar || 'https://via.placeholder.com/150'})` }} />
-        <div>
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>{user.name}</h2>
-          <p style={{ color: '#888', fontSize: '13px', margin: '2px 0 0 0' }}>@{user.username}</p>
+      {/* Upper Meta Row Header rendering line */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }} onClick={() => onUserClick(post.username)}>
+          <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: colors.border }} />
+          <span style={{ fontSize: '13px', fontWeight: 'bold' }}>{post.artist_name || post.username}</span>
         </div>
+        <span style={{ fontSize: '10px', padding: '4px 8px', borderRadius: '4px', background: colors.input, color: colors.meta, textTransform: 'uppercase' }}>
+          {isFa ? (CATEGORIES.find(c => c.id === post.category)?.fa || post.category) : (CATEGORIES.find(c => c.id === post.category)?.en || post.category)}
+        </span>
       </div>
 
-      <p style={{ fontSize: '14px', marginBottom: '20px', opacity: 0.9, textAlign: isFa ? 'right' : 'left' }}>{user.bio}</p>
-
-      {/* بخش آمار و دکمه تعاملی فالو */}
-      <div style={{ ...styles.statsContainer, background: isDark ? '#1c1c1e' : '#f2f2f7' }}>
-        <div style={styles.statBox}>
-          <span style={{ ...styles.statNum, color: isDark ? '#fff' : '#000' }}>{user.followers.length}</span>
-          <span style={styles.statLabel}>{isFa ? 'دنبال‌کننده' : 'Followers'}</span>
-        </div>
-        <div style={styles.statBox}>
-          <span style={{ ...styles.statNum, color: isDark ? '#fff' : '#000' }}>{user.following.length}</span>
-          <span style={styles.statLabel}>{isFa ? 'دنبال‌شونده ' : 'Following'}</span>
-        </div>
-        <div style={styles.statBox}>
-          <span style={{ ...styles.statNum, color: isDark ? '#fff' : '#000' }}>{posts.length}</span>
-          <span style={styles.statLabel}>{isFa ? 'اتودها' : 'Etudes'}</span>
-        </div>
-
-        {!isOwn && (
-          <button 
-            onClick={() => onFollowToggle(user.username)} 
-            style={{ ...styles.followBtn, background: isFollowing ? '#3a3a3c' : '#007aff', color: '#fff' }}
-          >
-            {isFollowing ? (isFa ? '✓ پایدار' : '✓ Following') : (isFa ? 'دنبال کردن' : 'Follow')}
-          </button>
-        )}
+      {/* Premium Video Media Framing block view */}
+      <div style={{ width: '100%', aspectRatio: '4/5', borderRadius: '12px', overflow: 'hidden', background: '#000', border: `1px solid ${colors.border}` }}>
+        <video src={post.media_url} controls loop muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
       </div>
 
-      <div style={{ marginTop: '25px', borderTop: `1px solid ${isDark ? '#222' : '#e5e5ea'}`, paddingTop: '15px' }}>
-        <h3 style={{ fontSize: '14px', color: '#666', marginBottom: '15px', textAlign: isFa ? 'right' : 'left' }}>🎬 {isFa ? 'آرشیو ویدیوها و اتودها' : 'Archive Video Etudes'}</h3>
-        <div style={styles.grid}>
-          {posts.map((p: any) => (
-            <div key={p.id} style={{ ...styles.gridItem, background: isDark ? '#1c1c1e' : '#f2f2f7', borderColor: isDark ? '#2c2c2e' : '#e5e5ea' }}>
-              <span style={{ fontSize: '11px', fontWeight: 'bold' }}>{p.title}</span>
-              <div style={{ fontSize: '9px', color: '#888', marginTop: '4px' }}>
-                {p.category === 'improvisation' ? (isFa ? 'بداهه‌پردازی' : 'Improv') : 'اتود'}
-              </div>
+      {/* Structural Descriptions segment layout blocks */}
+      <div>
+        <h4 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '4px' }}>{post.title}</h4>
+        <p style={{ fontSize: '12px', color: colors.meta, lineHeight: '1.5' }}>{post.description}</p>
+      </div>
+
+      {/* Interactive metrics bar rendering triggers row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderTop: `1px solid ${colors.border}`, borderBottom: `1px solid ${colors.border}`, padding: '8px 0' }}>
+        <button onClick={onLike} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px', color: hasLiked ? '#ff3b30' : colors.text }}>
+          {hasLiked ? '❤️' : '🤍'} <span style={{ fontSize: '11px', fontWeight: 'bold' }}>{t.like} ({post.likes?.length || 0})</span>
+        </button>
+      </div>
+
+      {/* Comments Segment Section Container sheet details view */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <span style={{ fontSize: '11px', color: colors.meta, fontWeight: 'bold' }}>{t.comments}</span>
+        <div style={{ maxHeight: '120px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', paddingRight: '4px' }}>
+          {post.comments?.map((c: any) => (
+            <div key={c.id} style={{ fontSize: '12px', lineHeight: '1.4', background: colors.input, padding: '6px 10px', borderRadius: '6px' }}>
+              <b style={{ cursor: 'pointer', color: '#007aff' }} onClick={() => onUserClick(c.username)}>@{c.username}: </b>
+              <span style={{ color: colors.text }}>{c.text}</span>
             </div>
           ))}
-          {posts.length === 0 && (
-            <p style={{ gridColumn: '1/-1', color: '#888', fontSize: '12px', textAlign: 'center', padding: '20px 0' }}>
-              {isFa ? 'هیچ پست عمومی وجود ندارد.' : 'No public posts found.'}
-            </p>
-          )}
         </div>
+        
+        <form onSubmit={handleSubmitComment} style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+          <input 
+            type="text" 
+            placeholder={t.addComment} 
+            value={comInput}
+            onChange={e => setComInput(e.target.value)}
+            style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: `1px solid ${colors.border}`, background: colors.input, color: colors.text, outline: 'none', fontSize: '12px' }}
+          />
+          <button type="submit" style={{ padding: '0 12px', borderRadius: '6px', background: colors.accent, color: isFa && !hasLiked ? (isDark ? '#000' : '#fff') : (isDark ? '#000' : '#fff'), fontSize: '12px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>➔</button>
+        </form>
       </div>
+
     </div>
   );
 }
-
-// ==========================================
-// ۵. معماری جامع استایل‌ها (CSS in JS)
-// ==========================================
-const styles: Record<string, React.CSSProperties> = {
-  splashContainer: {
-    display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', direction: 'ltr'
-  },
-  splashText: {
-    fontSize: '1.8rem', fontWeight: 'bold', letterSpacing: '4px'
-  },
-  loginWrapper: {
-    display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', padding: '16px'
-  },
-  loginCard: {
-    width: '100%', maxWidth: '380px', padding: '32px 24px', borderRadius: '16px', border: '1px solid', display: 'flex', flexDirection: 'column'
-  },
-  inlineActionBtn: {
-    background: 'none', border: 'none', color: '#007aff', fontSize: '12px', cursor: 'pointer'
-  },
-  appContainer: {
-    minHeight: '100vh', paddingBottom: '80px', fontFamily: 'system-ui, sans-serif', transition: 'background-color 0.2s, color 0.2s'
-  },
-  header: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', borderBottom: '1px solid', position: 'sticky', top: 0, zIndex: 90
-  },
-  logo: { fontSize: '18px', fontWeight: 'bold', letterSpacing: '-0.5px', cursor: 'pointer' },
-  menuToggleBtn: { background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', padding: '4px', outline: 'none' },
-  drawerMenu: {
-    position: 'fixed', top: '55px', bottom: 0, width: '260px', zIndex: 110, display: 'flex', flexDirection: 'column', transition: 'all 0.3s'
-  },
-  menuOverlay: { position: 'fixed', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 105 },
-  menuLinkBtn: { background: 'none', border: 'none', padding: '12px 16px', textAlign: 'inherit', width: '100%', fontSize: '13px', cursor: 'pointer' },
-  avatarCircle: { width: '40px', height: '40px', borderRadius: '50%', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#333' },
-  mainContent: { maxWidth: '480px', margin: '0 auto', padding: '16px' },
-  feedContainer: { display: 'flex', flexDirection: 'column', gap: '16px' },
-  sectionTitle: { fontSize: '15px', fontWeight: 'bold' },
-  emptyText: { color: '#888', textAlign: 'center', padding: '40px 0', fontSize: '13px' },
-  postCard: { borderRadius: '12px', border: '1px solid', padding: '14px' },
-  cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' },
-  cardUsername: { fontWeight: 'bold', fontSize: '13px', color: '#00ffcc', cursor: 'pointer' },
-  cardBadge: { background: '#1c1c1e', padding: '3px 6px', borderRadius: '4px', fontSize: '10px', color: '#888' },
-  mediaPlaceholder: { height: '200px', borderRadius: '8px', display: 'flex', justifyContent: 'center', alignItems: 'center', border: '1px solid' },
-  cardTitle: { fontSize: '13px', margin: '10px 0', lineHeight: '1.5' },
-  cardActions: { display: 'flex', alignItems: 'center', gap: '10px' },
-  likeBtn: { border: 'none', padding: '4px 10px', borderRadius: '14px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' },
-  likeCount: { fontSize: '11px', color: '#888' },
-  profileCard: { borderRadius: '12px', padding: '16px', border: '1px solid' },
-  avatarContainer: { width: '60px', height: '60px', borderRadius: '50%', backgroundSize: 'cover', backgroundPosition: 'center', backgroundColor: '#333' },
-  backBtn: { background: 'none', border: 'none', color: '#007aff', fontSize: '12px', cursor: 'pointer', marginBottom: '12px', display: 'block' },
-  statsContainer: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', borderRadius: '8px', gap: '6px' },
-  statBox: { textAlign: 'center', flex: 1 },
-  statNum: { display: 'block', fontSize: '14px', fontWeight: 'bold' },
-  statLabel: { fontSize: '10px', color: '#888' },
-  followBtn: { border: 'none', padding: '6px 12px', borderRadius: '14px', fontSize: '10px', fontWeight: 'bold', cursor: 'pointer' },
-  postForm: { borderRadius: '12px', padding: '14px', border: '1px solid', display: 'flex', flexDirection: 'column', gap: '10px' },
-  input: { border: 'none', padding: '10px 12px', borderRadius: '6px', fontSize: '13px', outline: 'none' },
-  submitBtn: { border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' },
-  bottomNav: {
-    position: 'fixed', bottom: 0, left: 0, right: 0, height: '60px', borderTop: '1px solid', display: 'flex', justifyContent: 'space-around', alignItems: 'center', zIndex: 100
-  },
-  navBtn: { background: 'none', border: 'none', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', outline: 'none' },
-  adminCard: { padding: '12px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid' },
-  categoryBadge: { fontSize: '10px', background: '#2c2c2e', padding: '2px 4px', borderRadius: '3px', color: '#aaa' },
-  approveBtn: { background: '#34c759', color: '#fff', border: 'none', padding: '6px 10px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', fontSize: '11px' },
-  grid: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px' },
-  gridItem: { aspectRatio: '1', borderRadius: '6px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '4px', border: '1px solid' }
-};
