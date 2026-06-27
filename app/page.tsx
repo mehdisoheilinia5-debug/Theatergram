@@ -13,24 +13,24 @@ export default function Page() {
   
   const [lang, setLang] = useState<'fa' | 'en'>('fa');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-  const [activeTab, setActiveTab] = useState<'explore' | 'profile' | 'admin'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'explore' | 'admin'>('profile');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('rehearsal');
   const [targetUser, setTargetUser] = useState<string | null>(null);
 
-  // وضعیت‌های منوی همبرگری و مدال‌ها
+  // پاپ‌آپ‌ها و مدیریت همبرگری
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [selectedGridPost, setSelectedGridPost] = useState<EtudePost | null>(null);
 
-  // فیلدهای ایجاد پست
+  // وضعیت آپلود پست
   const [postTitle, setPostTitle] = useState('');
   const [postDesc, setPostDesc] = useState('');
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  // فیلدهای ویرایش مشخصات
+  // وضعیت ویرایش پروفایل
   const [editName, setEditName] = useState('');
   const [editBio, setEditBio] = useState('');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -62,7 +62,7 @@ export default function Page() {
     }
   }, [currentUser, core.profiles]);
 
-  // احراز هویت قطعی و ایمن دیتابیس
+  // گیت ورود امنیتی ادمین پلتفرم
   const handleSecureAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
@@ -73,10 +73,9 @@ export default function Page() {
       return;
     }
 
-    // قفل امنیتی اختصاصی حساب ادمین اصلی (Mehdi Soheilinia)
     if (cleanUsername === 'mehdisoheilinia') {
       if (passwordInput !== '10119107') {
-        setAuthError(isFa ? 'گذرواژه ادمین پلتفرم تئاترگرام اشتباه است.' : 'Invalid Admin Passcode.');
+        setAuthError(isFa ? 'گذرواژه ارزیابی ادمین تئاترگرام اشتباه است.' : 'Invalid Passcode.');
         return;
       }
       setCurrentUser(cleanUsername);
@@ -91,14 +90,14 @@ export default function Page() {
 
     if (isSignUp) {
       if (existingUser) {
-        setAuthError(isFa ? 'این نام کاربری قبلاً ثبت شده است.' : 'Username taken.');
+        setAuthError(isFa ? 'این نام کاربری قبلاً توسط هنرمند دیگری رزرو شده.' : 'Username taken.');
       } else {
         await supabase.from('profiles').insert([{ username: cleanUsername, name: cleanUsername, bio: '', followers: [], following: [] }]);
         setCurrentUser(cleanUsername);
       }
     } else {
       if (!existingUser) {
-        setAuthError(isFa ? 'نام کاربری یافت نشد. ابتدا ثبت نام کنید.' : 'User not found.');
+        setAuthError(isFa ? 'حساب کاربری یافت نشد. ابتدا عضو شوید.' : 'User not found.');
       } else {
         setCurrentUser(cleanUsername);
       }
@@ -112,12 +111,13 @@ export default function Page() {
     setUploading(true);
     const url = await core.uploadMediaAsset(mediaFile, 'media');
     if (url) {
-      const success = await core.createPost(postTitle || 'اثر تئاتر', postDesc, selectedCategory, url);
+      // ارسال مستقیم پست به بخش مدیریت (وضعیت کاملاً pending)
+      const success = await core.createPost(postTitle || 'اثر هنری', postDesc, selectedCategory, url);
       if (success) {
         setPostTitle('');
         setPostDesc('');
         setMediaFile(null);
-        alert(currentUser === 'mehdisoheilinia' ? 'منتشر شد!' : 'با موفقیت جهت بررسی به ادمین ارسال شد.');
+        alert(isFa ? 'اثر بارگذاری شد و به میز ارزیابی مدیریت منتقل گردید.' : 'Sent to Admin Review Desk.');
       }
     }
     setUploading(false);
@@ -141,6 +141,13 @@ export default function Page() {
     setUpdatingProfile(false);
   };
 
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setIsMenuOpen(false);
+    setActiveTab('profile');
+    setTargetUser(null);
+  };
+
   const approvedPosts = core.posts.filter(p => {
     if (p.status !== 'approved') return false;
     if (searchQuery.trim() && !p.username.includes(searchQuery.toLowerCase())) return false;
@@ -150,23 +157,31 @@ export default function Page() {
   const pendingPosts = core.posts.filter(p => p.status === 'pending');
   const activeProfileUsername = targetUser || currentUser;
   const activeProfileData = core.profiles[activeProfileUsername || ''];
-  const profilePosts = core.posts.filter(p => p.username === activeProfileUsername && (p.status === 'approved' || activeProfileUsername === currentUser));
+  
+  // فیلتر کردن پست‌ها: پست‌های با وضعیت تایید شده یا پست‌های شخصی خودت در حالت انتظار
+  const profilePosts = core.posts.filter(p => p.username === activeProfileUsername && (p.status === 'approved' || (p.status === 'pending' && activeProfileUsername === currentUser)));
+
+  // استایل جهانی برای جلوگیری از خروج اجزا از کادر گوشی
+  const mobileWrapperStyle: React.CSSProperties = {
+    maxWidth: '100%',
+    boxSizing: 'border-box'
+  };
 
   if (!currentUser) {
     return (
-      <div style={{ background: '#000000', color: '#ffffff', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
-        <form onSubmit={handleSecureAuth} style={{ width: '100%', maxWidth: '330px', background: '#121212', border: '1px solid #262626', padding: '35px 25px', borderRadius: '12px', textAlign: 'center' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: 'bold', fontFamily: 'serif', marginBottom: '25px' }}>تئاترگرام</h1>
+      <div style={{ background: '#000000', color: '#ffffff', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '16px', boxSizing: 'border-box' }}>
+        <form onSubmit={handleSecureAuth} style={{ width: '100%', maxWidth: '325px', background: '#121212', border: '1px solid #262626', padding: '30px 20px', borderRadius: '12px', textAlign: 'center', boxSizing: 'border-box' }}>
+          <h1 style={{ fontSize: '26px', fontWeight: 'bold', fontFamily: 'serif', marginBottom: '25px', letterSpacing: '0.5px' }}>تئاترگرام</h1>
           
-          <input type="text" placeholder={t.username} value={usernameInput} onChange={(e) => setUsernameInput(e.target.value)} style={{ width: '100%', padding: '11px', borderRadius: '6px', border: '1px solid #262626', background: '#1c1c1e', color: '#fff', marginBottom: '12px', outline: 'none', fontSize: '13px', textAlign: 'center' }} required />
-          <input type="password" placeholder={t.password} value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} style={{ width: '100%', padding: '11px', borderRadius: '6px', border: '1px solid #262626', background: '#1c1c1e', color: '#fff', marginBottom: '15px', outline: 'none', fontSize: '13px', textAlign: 'center' }} required />
+          <input type="text" placeholder={t.username} value={usernameInput} onChange={(e) => setUsernameInput(e.target.value)} style={{ width: '100%', padding: '11px', borderRadius: '6px', border: '1px solid #262626', background: '#1c1c1e', color: '#fff', marginBottom: '12px', outline: 'none', fontSize: '13px', textAlign: 'center', boxSizing: 'border-box' }} required />
+          <input type="password" placeholder={t.password} value={passwordInput} onChange={(e) => setPasswordInput(e.target.value)} style={{ width: '100%', padding: '11px', borderRadius: '6px', border: '1px solid #262626', background: '#1c1c1e', color: '#fff', marginBottom: '15px', outline: 'none', fontSize: '13px', textAlign: 'center', boxSizing: 'border-box' }} required />
           
-          {authError && <p style={{ color: colors.red, fontSize: '12px', marginBottom: '12px' }}>{authError}</p>}
+          {authError && <p style={{ color: colors.red, fontSize: '12px', marginBottom: '12px' }}>⚠️ {authError}</p>}
           
-          <button type="submit" style={{ width: '100%', padding: '11px', background: '#ffffff', color: '#000000', fontWeight: 'bold', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '13px', marginBottom: '15px' }}>{t.enterBtn}</button>
+          <button type="submit" style={{ width: '100%', padding: '11px', background: '#ffffff', color: '#000000', fontWeight: 'bold', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '13px', marginBottom: '15px', boxSizing: 'border-box' }}>{t.enterBtn}</button>
           
           <div onClick={() => { setIsSignUp(!isSignUp); setAuthError(''); }} style={{ fontSize: '12px', color: colors.meta, cursor: 'pointer', textDecoration: 'underline' }}>
-            {isSignUp ? 'ورود هنرمندان ثبت نام شده' : 'ایجاد حساب کاربری هنرمند جدید'}
+            {isSignUp ? 'ورود به حساب هنرمند' : 'ایجاد حساب کاربری جدید تخصصی'}
           </div>
         </form>
       </div>
@@ -174,78 +189,96 @@ export default function Page() {
   }
 
   return (
-    <div style={{ background: colors.bg, color: colors.text, minHeight: '100vh', direction: isFa ? 'rtl' : 'ltr', paddingBottom: '80px' }}>
+    <div style={{ background: colors.bg, color: colors.text, minHeight: '100vh', direction: isFa ? 'rtl' : 'ltr', paddingBottom: '80px', boxSizing: 'border-box' }}>
       
-      {/* هدر بالایی با منوی همبرگری مستقل */}
-      <header style={{ position: 'sticky', top: 0, zIndex: 100, background: colors.bg, borderBottom: `1px solid ${colors.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px' }}>
-        <span style={{ fontWeight: 'bold', fontSize: '20px', fontFamily: 'serif' }}>تئاترگرام</span>
+      {/* هدر بالایی با دکمه سه‌خط */}
+      <header style={{ position: 'sticky', top: 0, zIndex: 100, background: colors.bg, borderBottom: `1px solid ${colors.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px' }}>
+        <span style={{ fontWeight: 'bold', fontSize: '19px', fontFamily: 'serif' }}>تئاترگرام</span>
         <button onClick={() => setIsMenuOpen(!isMenuOpen)} style={{ background: 'none', border: 'none', color: colors.text, fontSize: '22px', cursor: 'pointer' }}>☰</button>
       </header>
 
-      {/* منوی همبرگری کشویی */}
+      {/* منوی همبرگری مستقل کشویی کشیده شده بر اساس پلتفرم */}
       {isMenuOpen && (
-        <div style={{ position: 'fixed', top: '55px', [isFa ? 'left' : 'right']: '0', width: '220px', background: colors.card, border: `1px solid ${colors.border}`, borderRadius: '0 0 8px 8px', zIndex: 110, padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px', boxShadow: '0 8px 20px rgba(0,0,0,0.5)' }}>
+        <div style={{ position: 'fixed', top: '50px', [isFa ? 'left' : 'right']: '10px', width: '210px', background: colors.card, border: `1px solid ${colors.border}`, borderRadius: '8px', zIndex: 110, padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px', boxShadow: '0 8px 25px rgba(0,0,0,0.6)' }}>
           <button onClick={() => { setLang(l => l === 'fa' ? 'en' : 'fa'); setIsMenuOpen(false); }} style={{ width: '100%', padding: '10px', background: 'none', border: 'none', color: colors.text, textAlign: isFa ? 'right' : 'left', cursor: 'pointer', fontSize: '12.5px' }}>🌐 {t.changeLang}</button>
           <button onClick={() => { setTheme(t => t === 'dark' ? 'light' : 'dark'); setIsMenuOpen(false); }} style={{ width: '100%', padding: '10px', background: 'none', border: 'none', color: colors.text, textAlign: isFa ? 'right' : 'left', cursor: 'pointer', fontSize: '12.5px' }}>🌗 {t.changeTheme}</button>
           <button onClick={() => { setIsAboutOpen(true); setIsMenuOpen(false); }} style={{ width: '100%', padding: '10px', background: 'none', border: 'none', color: colors.text, textAlign: isFa ? 'right' : 'left', cursor: 'pointer', fontSize: '12.5px' }}>ℹ️ {t.about}</button>
+          <hr style={{ border: 'none', borderTop: `1px solid ${colors.border}`, margin: '4px 0' }} />
+          <button onClick={handleLogout} style={{ width: '100%', padding: '10px', background: 'none', border: 'none', color: colors.red, textAlign: isFa ? 'right' : 'left', cursor: 'pointer', fontSize: '12.5px', fontWeight: 'bold' }}>🚪 {t.logout}</button>
         </div>
       )}
 
-      <main style={{ maxWidth: '480px', margin: '0 auto', padding: '15px' }}>
+      <main style={{ maxWidth: '460px', margin: '0 auto', padding: '12px', boxSizing: 'border-box' }}>
         
-        {/* ۱. صفحه کاربری مستقل (مطابق ساختار فرستاده شده) */}
-        {activeTab === 'profile' && !targetUser && (
-          <div>
+        {/* ۱. کادر صفحه کاربری اینستاگرامی (پروفایل شخصی یا تماشای پروفایل دیگران) */}
+        {(activeTab === 'profile' || targetUser) && (
+          <div style={mobileWrapperStyle}>
+            {targetUser && (
+              <button onClick={() => setTargetUser(null)} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', marginBottom: '12px', fontSize: '12.5px', fontWeight: 'bold' }}>{isFa ? '← بازگشت به فید اکسپلور' : '← Back'}</button>
+            )}
+
             {activeProfileData && (
-              <div style={{ background: colors.card, border: `1px solid ${colors.border}`, padding: '20px', borderRadius: '12px', marginBottom: '15px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '15px', marginBottom: '15px' }}>
-                  <div>
-                    <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#fff' }}>{activeProfileData.name || activeProfileData.username}</h2>
-                    <p style={{ fontSize: '13px', color: colors.meta }}>@{activeProfileData.username}</p>
-                    <p style={{ fontSize: '12px', color: colors.meta, marginTop: '4px' }}>کارگردان و بازیگر</p>
+              <div style={{ background: colors.card, border: `1px solid ${colors.border}`, padding: '18px', borderRadius: '12px', marginBottom: '15px', boxSizing: 'border-box' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '15px' }}>
+                  <div style={{ minWidth: '0', flex: 1 }}>
+                    <h2 style={{ fontSize: '17px', fontWeight: 'bold', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeProfileData.name || activeProfileData.username}</h2>
+                    <p style={{ fontSize: '12.5px', color: colors.meta }}>@{activeProfileData.username}</p>
+                    <p style={{ fontSize: '12px', color: colors.meta, marginTop: '4px' }}>کارگردان و بازیگر تئاتر</p>
                   </div>
-                  <div style={{ width: '70px', height: '70px', borderRadius: '50%', border: `2px solid ${colors.border}`, backgroundColor: colors.input, backgroundImage: activeProfileData.avatar_url ? `url(${activeProfileData.avatar_url})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center' }} />
+                  <div style={{ width: '68px', height: '68px', borderRadius: '50%', border: `2px solid ${colors.border}`, backgroundColor: colors.input, backgroundImage: activeProfileData.avatar_url ? `url(${activeProfileData.avatar_url})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', flexShrink: 0 }} />
                 </div>
+
+                {activeProfileData.bio && (
+                  <p style={{ fontSize: '12.5px', color: '#e1e1e6', lineHeight: '1.4', marginBottom: '12px', whiteSpace: 'pre-line' }}>{activeProfileData.bio}</p>
+                )}
 
                 <div style={{ display: 'flex', gap: '15px', fontSize: '13px', marginBottom: '15px', color: colors.meta }}>
-                  <span><strong style={{ color: colors.red }}>{activeProfileData.followers?.length || 0}</strong> {t.followers}</span>
-                  <span><strong>{activeProfileData.following?.length || 0}</strong> {t.following}</span>
+                  <span><strong style={{ color: '#fff' }}>{activeProfileData.followers?.length || 0}</strong> {t.followers}</span>
+                  <span><strong style={{ color: '#fff' }}>{activeProfileData.following?.length || 0}</strong> {t.following}</span>
                 </div>
 
-                <button onClick={() => setIsEditProfileOpen(true)} style={{ width: '100%', padding: '8px', background: 'none', border: `1px solid ${colors.border}`, color: colors.text, borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}>{t.saveProfile}</button>
+                {currentUser === activeProfileUsername ? (
+                  <button onClick={() => setIsEditProfileOpen(true)} style={{ width: '100%', padding: '8px', background: 'none', border: `1px solid ${colors.border}`, color: colors.text, borderRadius: '6px', fontSize: '12.5px', fontWeight: '500', cursor: 'pointer', boxSizing: 'border-box' }}>{t.saveProfile}</button>
+                ) : (
+                  <button onClick={() => core.toggleFollow(activeProfileUsername!)} style={{ width: '100%', padding: '8px', background: activeProfileData.followers?.includes(currentUser) ? 'none' : '#ffffff', color: activeProfileData.followers?.includes(currentUser) ? '#fff' : '#000', border: `1px solid ${colors.border}`, borderRadius: '6px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer', boxSizing: 'border-box' }}>
+                    {activeProfileData.followers?.includes(currentUser) ? t.unfollow : t.follow}
+                  </button>
+                )}
               </div>
             )}
 
-            {/* کادر ظریف و هنری ارسال مستقیم پست تئاتر */}
-            <div style={{ background: colors.card, border: `1px solid ${colors.border}`, padding: '15px', borderRadius: '12px', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', marginBottom: '12px' }}>
-                {CATEGORIES.map(c => (
-                  <button key={c.id} onClick={() => setSelectedCategory(c.id)} style={{ padding: '6px 14px', borderRadius: '8px', fontSize: '12px', border: 'none', background: selectedCategory === c.id ? '#ffffff' : colors.input, color: selectedCategory === c.id ? '#000000' : colors.text, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s' }}>{isFa ? c.fa : c.en}</button>
-                ))}
-              </div>
-
-              <form onSubmit={handlePostCreation} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <div style={{ border: `1px dashed ${colors.border}`, padding: '15px', borderRadius: '8px', textAlign: 'center', background: colors.bg, position: 'relative' }}>
-                  <input type="file" accept="video/*,image/*" onChange={e => setMediaFile(e.target.files?.[0] || null)} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} />
-                  <span style={{ fontSize: '13px', color: colors.text }}>{mediaFile ? `📄 ${mediaFile.name}` : t.uploadMedia}</span>
+            {/* کادر آپلود مستقیم اثر (فقط در پروفایل خود کاربر نمایش داده می‌شود) */}
+            {currentUser === activeProfileUsername && (
+              <div style={{ background: colors.card, border: `1px solid ${colors.border}`, padding: '14px', borderRadius: '12px', marginBottom: '15px', boxSizing: 'border-box' }}>
+                <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', marginBottom: '12px', paddingBottom: '4px' }}>
+                  {CATEGORIES.map(c => (
+                    <button key={c.id} onClick={() => setSelectedCategory(c.id)} style={{ padding: '6px 14px', borderRadius: '6px', fontSize: '12px', border: 'none', background: selectedCategory === c.id ? '#ffffff' : colors.input, color: selectedCategory === c.id ? '#000000' : colors.text, cursor: 'pointer', whiteSpace: 'nowrap' }}>{isFa ? c.fa : c.en}</button>
+                  ))}
                 </div>
 
-                <textarea placeholder={t.descPlaceholder} value={postDesc} onChange={e => setPostDesc(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: colors.input, color: colors.text, border: 'none', outline: 'none', fontSize: '13px', minHeight: '60px', resize: 'none' }} />
-                
-                <button type="submit" disabled={uploading} style={{ padding: '10px', background: '#ffffff', color: '#000000', fontWeight: 'bold', borderRadius: '8px', border: 'none', fontSize: '13px', cursor: 'pointer' }}>
-                  {uploading ? 'در حال ارسال...' : t.submitPost}
-                </button>
-              </form>
-            </div>
+                <form onSubmit={handlePostCreation} style={{ display: 'flex', flexDirection: 'column', gap: '10px', boxSizing: 'border-box' }}>
+                  <div style={{ border: `1px dashed ${colors.border}`, padding: '16px', borderRadius: '8px', textAlign: 'center', background: colors.bg, position: 'relative', boxSizing: 'border-box' }}>
+                    <input type="file" accept="video/*,image/*" onChange={e => setMediaFile(e.target.files?.[0] || null)} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} />
+                    <span style={{ fontSize: '12.5px', color: colors.text, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{mediaFile ? `📄 ${mediaFile.name}` : t.uploadMedia}</span>
+                  </div>
 
-            {/* بخش جدول ۳ ستونه آثار کاربر */}
-            <h3 style={{ fontSize: '13px', color: colors.meta, marginBottom: '10px' }}>{t.gridTitle}</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '3px' }}>
+                  <textarea placeholder={t.descPlaceholder} value={postDesc} onChange={e => setPostDesc(e.target.value)} style={{ width: '100%', padding: '10px', borderRadius: '8px', background: colors.input, color: colors.text, border: 'none', outline: 'none', fontSize: '13px', minHeight: '55px', resize: 'none', boxSizing: 'border-box' }} />
+                  
+                  <button type="submit" disabled={uploading} style={{ width: '100%', padding: '10px', background: '#ffffff', color: '#000000', fontWeight: 'bold', borderRadius: '8px', border: 'none', fontSize: '12.5px', cursor: 'pointer', boxSizing: 'border-box' }}>
+                    {uploading ? 'در حال اتصال به صحنه...' : t.submitPost}
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {/* نمای ۳ ستونه اینستاگرامی آثار هنرمند */}
+            <h3 style={{ fontSize: '12.5px', color: colors.meta, marginBottom: '8px', padding: '0 2px' }}>{t.gridTitle}</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '3px', boxSizing: 'border-box' }}>
               {profilePosts.map(post => (
-                <div key={post.id} onClick={() => setSelectedGridPost(post)} style={{ aspectRatio: '1/1', background: '#000', position: 'relative', cursor: 'pointer' }}>
-                  <video src={post.media_url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: post.status === 'pending' ? 0.3 : 1 }} />
+                <div key={post.id} onClick={() => setSelectedGridPost(post)} style={{ aspectRatio: '1/1', background: '#08080a', position: 'relative', cursor: 'pointer', borderRadius: '4px', overflow: 'hidden' }}>
+                  <MediaRenderer url={post.media_url} style={{ width: '100%', height: '100%', objectFit: 'cover', opacity: post.status === 'pending' ? 0.35 : 1 }} />
                   {post.status === 'pending' && (
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'rgba(0,0,0,0.4)', fontSize: '10px', color: '#fff' }}>بررسی ادمین</div>
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'rgba(0,0,0,0.5)', fontSize: '9.5px', color: '#ffb300', fontWeight: 'bold', textAlign: 'center', padding: '2px' }}>در انتظار بررسی ادمین</div>
                   )}
                 </div>
               ))}
@@ -253,77 +286,101 @@ export default function Page() {
           </div>
         )}
 
-        {/* ۲. صفحه اکسپلور عمومی */}
-        {activeTab === 'explore' && (
-          <div>
-            <div style={{ marginBottom: '15px' }}>
-              <input type="text" placeholder={t.searchPlaceholder} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: 'none', background: colors.input, color: colors.text, outline: 'none', fontSize: '13px' }} />
+        {/* ۲. فید صفحه اکسپلور عمومی */}
+        {activeTab === 'explore' && !targetUser && (
+          <div style={mobileWrapperStyle}>
+            <div style={{ marginBottom: '12px', boxSizing: 'border-box' }}>
+              <input type="text" placeholder={t.searchPlaceholder} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: 'none', background: colors.input, color: colors.text, outline: 'none', fontSize: '13px', boxSizing: 'border-box' }} />
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', boxSizing: 'border-box' }}>
               {approvedPosts.length === 0 ? (
-                <p style={{ color: colors.meta, textAlign: 'center', fontSize: '12px', marginTop: '30px' }}>{t.noPosts}</p>
+                <p style={{ color: colors.meta, textAlign: 'center', fontSize: '12.5px', marginTop: '40px' }}>{t.noPosts}</p>
               ) : (
                 approvedPosts.map(post => (
-                  <PostCard key={post.id} post={post} colors={colors} t={t} isFa={isFa} isDark={isDark} currentUser={currentUser} onLike={() => core.toggleLike(post.id, post.likes)} onComment={(txt) => core.appendComment(post.id, post.comments, txt)} />
+                  <PostCard key={post.id} post={post} colors={colors} t={t} isFa={isFa} currentUser={currentUser} onLike={() => core.toggleLike(post.id, post.likes)} onComment={(txt) => core.appendComment(post.id, post.comments, txt)} onUserClick={(uname) => setTargetUser(uname)} />
                 ))
               )}
             </div>
           </div>
         )}
 
-        {/* ۳. میز ارزیابی ادمین (فقط و فقط مخصوص ورود تو با پسورد تایید شده) */}
+        {/* ۳. میز ارزیابی و تایید ادمین (فقط و فقط مخصوص کاربری mehdisoheilinia) */}
         {activeTab === 'admin' && currentUser === 'mehdisoheilinia' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            <h2 style={{ fontSize: '15px', fontWeight: 'bold' }}>{t.pendingQueue} ({pendingPosts.length})</h2>
-            {pendingPosts.map(post => (
-              <div key={post.id} style={{ background: colors.card, border: `1px solid ${colors.border}`, padding: '15px', borderRadius: '12px' }}>
-                <p style={{ fontSize: '13px', marginBottom: '8px' }}>ارسال شده از طرف: @{post.username}</p>
-                <video src={post.media_url} controls style={{ width: '100%', borderRadius: '6px', maxHeight: '200px', background: '#000', marginBottom: '10px' }} />
-                <p style={{ fontSize: '12.5px', color: colors.meta, marginBottom: '10px' }}>{post.description}</p>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={() => core.approvePost(post.id)} style={{ flex: 1, padding: '8px', background: '#24b33b', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>{t.approve}</button>
-                  <button onClick={() => core.rejectPost(post.id)} style={{ padding: '8px', background: colors.red, color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>{t.reject}</button>
+          <div style={{ ...mobileWrapperStyle, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <h2 style={{ fontSize: '15px', fontWeight: 'bold', color: '#ffb300' }}>{t.pendingQueue} ({pendingPosts.length})</h2>
+            {pendingPosts.length === 0 ? (
+              <p style={{ color: colors.meta, fontSize: '12.5px' }}>{t.noPosts}</p>
+            ) : (
+              pendingPosts.map(post => (
+                <div key={post.id} style={{ background: colors.card, border: `1px solid ${colors.border}`, padding: '14px', borderRadius: '12px', boxSizing: 'border-box' }}>
+                  <p style={{ fontSize: '12.5px', marginBottom: '8px', color: colors.meta }}>ارسال شده توسط هنرمند: <strong style={{ color: '#fff' }}>@{post.username}</strong></p>
+                  <div style={{ width: '100%', maxHeight: '240px', overflow: 'hidden', borderRadius: '6px', marginBottom: '10px', background: '#000' }}>
+                    <MediaRenderer url={post.media_url} controls style={{ width: '100%', maxHeight: '240px' }} />
+                  </div>
+                  <p style={{ fontSize: '13px', color: colors.text, marginBottom: '12px' }}>{post.description}</p>
+                  <div style={{ display: 'flex', gap: '8px', boxSizing: 'border-box' }}>
+                    <button onClick={() => core.approvePost(post.id)} style={{ flex: 1, padding: '9px', background: '#24b33b', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12.5px', fontWeight: 'bold' }}>{t.approve}</button>
+                    <button onClick={() => core.rejectPost(post.id)} style={{ padding: '9px 14px', background: colors.red, color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12.5px' }}>{t.reject}</button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         )}
 
       </main>
 
-      {/* ناوبری چسبان پایینی */}
-      <nav style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '480px', zIndex: 100, background: colors.bg, borderTop: `1px solid ${colors.border}`, display: 'flex', justifyContent: 'space-around', padding: '12px 0' }}>
-        <button onClick={() => setActiveTab('explore')} style={{ background: 'none', border: 'none', color: activeTab === 'explore' ? '#fff' : colors.meta, fontSize: '12.5px', cursor: 'pointer' }}>🧭 {t.explore}</button>
-        <button onClick={() => setActiveTab('profile')} style={{ background: 'none', border: 'none', color: activeTab === 'profile' ? '#fff' : colors.meta, fontSize: '12.5px', cursor: 'pointer' }}>👤 {t.profile}</button>
+      {/* ناوبری چسبان منوی پایینی موبایل */}
+      <nav style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '460px', zIndex: 100, background: colors.bg, borderTop: `1px solid ${colors.border}`, display: 'flex', justifyContent: 'space-around', padding: '12px 0', boxSizing: 'border-box' }}>
+        <button onClick={() => { setTargetUser(null); setActiveTab('explore'); }} style={{ background: 'none', border: 'none', color: activeTab === 'explore' ? '#fff' : colors.meta, fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer' }}>🧭 {t.explore}</button>
+        <button onClick={() => { setTargetUser(null); setActiveTab('profile'); }} style={{ background: 'none', border: 'none', color: activeTab === 'profile' && !targetUser ? '#fff' : colors.meta, fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer' }}>👤 {t.profile}</button>
         {currentUser === 'mehdisoheilinia' && (
-          <button onClick={() => setActiveTab('admin')} style={{ background: 'none', border: 'none', color: activeTab === 'admin' ? '#fff' : colors.meta, fontSize: '12.5px', cursor: 'pointer' }}>⚙️ {t.admin}</button>
+          <button onClick={() => { setTargetUser(null); setActiveTab('admin'); }} style={{ background: 'none', border: 'none', color: activeTab === 'admin' ? '#ffb300' : colors.meta, fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer' }}>⚙️ {t.admin}</button>
         )}
       </nav>
 
-      {/* مدال درباره برنامه */}
+      {/* ================= پاپ‌آپ‌های مستقل موبایلی ================= */}
+
+      {/* ۱. مدال درباره برنامه */}
       {isAboutOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 200, padding: '20px' }}>
-          <div style={{ background: colors.card, border: `1px solid ${colors.border}`, padding: '20px', borderRadius: '12px', maxWidth: '360px', width: '100%' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: 'bold', marginBottom: '10px' }}>{t.about}</h3>
-            <p style={{ fontSize: '13px', lineHeight: '1.6', marginBottom: '15px' }}>{t.aboutText}</p>
-            <button onClick={() => setIsAboutOpen(false)} style={{ width: '100%', padding: '8px', background: '#fff', color: '#000', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>{t.close}</button>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 200, padding: '16px', boxSizing: 'border-box' }}>
+          <div style={{ background: colors.card, border: `1px solid ${colors.border}`, padding: '20px', borderRadius: '12px', maxWidth: '340px', width: '100%', boxSizing: 'border-box' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}>{t.about}</h3>
+            <p style={{ fontSize: '13px', lineHeight: '1.5', marginBottom: '15px', color: '#d1d1d6' }}>{t.aboutText}</p>
+            <button onClick={() => setIsAboutOpen(false)} style={{ width: '100%', padding: '9px', background: '#fff', color: '#000', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>{t.close}</button>
           </div>
         </div>
       )}
 
-      {/* مدال ویرایش پروفایل */}
+      {/* ۲. مدال ویرایش اطلاعات و آواتار از گالری */}
       {isEditProfileOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 200, padding: '20px' }}>
-          <form onSubmit={handleUpdateProfile} style={{ background: colors.card, border: `1px solid ${colors.border}`, padding: '20px', borderRadius: '12px', maxWidth: '360px', width: '100%', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <input type="text" placeholder={t.displayName} value={editName} onChange={e => setEditName(e.target.value)} style={{ padding: '10px', borderRadius: '6px', background: colors.bg, color: '#fff', border: `1px solid ${colors.border}` }} />
-            <input type="text" placeholder={t.bio} value={editBio} onChange={e => setEditBio(e.target.value)} style={{ padding: '10px', borderRadius: '6px', background: colors.bg, color: '#fff', border: `1px solid ${colors.border}` }} />
-            <input type="file" accept="image/*" onChange={e => setAvatarFile(e.target.files?.[0] || null)} style={{ fontSize: '12px', color: colors.meta }} />
-            <button type="submit" disabled={updatingProfile} style={{ padding: '10px', background: '#fff', color: '#000', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-              {updatingProfile ? 'در حال بروزرسانی...' : t.saveProfile}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 200, padding: '16px', boxSizing: 'border-box' }}>
+          <form onSubmit={handleUpdateProfile} style={{ background: colors.card, border: `1px solid ${colors.border}`, padding: '20px', borderRadius: '12px', maxWidth: '340px', width: '100%', display: 'flex', flexDirection: 'column', gap: '12px', boxSizing: 'border-box' }}>
+            <h3 style={{ fontSize: '14px', fontWeight: 'bold' }}>{t.saveProfile}</h3>
+            <input type="text" placeholder={t.displayName} value={editName} onChange={e => setEditName(e.target.value)} style={{ padding: '10px', borderRadius: '6px', background: colors.bg, color: '#fff', border: `1px solid ${colors.border}`, fontSize: '13px', boxSizing: 'border-box', width: '100%' }} />
+            <input type="text" placeholder={t.bio} value={editBio} onChange={e => setEditBio(e.target.value)} style={{ padding: '10px', borderRadius: '6px', background: colors.bg, color: '#fff', border: `1px solid ${colors.border}`, fontSize: '13px', boxSizing: 'border-box', width: '100%' }} />
+            
+            <div style={{ border: `1px dashed ${colors.border}`, padding: '12px', borderRadius: '6px', background: colors.bg, textAlign: 'center', position: 'relative', boxSizing: 'border-box' }}>
+              <input type="file" accept="image/*" onChange={e => setAvatarFile(e.target.files?.[0] || null)} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} />
+              <span style={{ fontSize: '12px', color: colors.meta }}>{avatarFile ? `📸 ${avatarFile.name}` : 'انتخاب تصویر پروفایل جدید از گالری'}</span>
+            </div>
+
+            <button type="submit" disabled={updatingProfile} style={{ width: '100%', padding: '10px', background: '#fff', color: '#000', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', boxSizing: 'border-box' }}>
+              {updatingProfile ? 'در حال ثبت در دیتابیس...' : t.saveProfile}
             </button>
-            <button type="button" onClick={() => setIsEditProfileOpen(false)} style={{ background: 'none', border: 'none', color: colors.meta, cursor: 'pointer', fontSize: '12px' }}>{t.close}</button>
+            <button type="button" onClick={() => setIsEditProfileOpen(false)} style={{ background: 'none', border: 'none', color: colors.meta, cursor: 'pointer', fontSize: '12px', marginTop: '4px' }}>{t.close}</button>
           </form>
+        </div>
+      )}
+
+      {/* ۳. پاپ‌آپ باز کردن فول‌اسکرین پست از روی گرید کاربری */}
+      {selectedGridPost && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 200, padding: '12px', boxSizing: 'border-box' }}>
+          <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: '12px', width: '100%', maxWidth: '400px', overflow: 'hidden', position: 'relative', padding: '10px', boxSizing: 'border-box' }}>
+            <button onClick={() => setSelectedGridPost(null)} style={{ position: 'absolute', top: '15px', [isFa ? 'left' : 'right']: '15px', background: 'rgba(0,0,0,0.6)', border: 'none', color: '#fff', width: '28px', height: '28px', borderRadius: '50%', cursor: 'pointer', zIndex: 10 }}>✕</button>
+            <PostCard post={selectedGridPost} colors={colors} t={t} isFa={isFa} currentUser={currentUser} onLike={() => core.toggleLike(selectedGridPost.id, selectedGridPost.likes)} onComment={(txt) => core.appendComment(selectedGridPost.id, selectedGridPost.comments, txt)} onUserClick={(uname) => { setSelectedGridPost(null); setTargetUser(uname); }} />
+          </div>
         </div>
       )}
 
@@ -331,19 +388,64 @@ export default function Page() {
   );
 }
 
-function PostCard({ post, colors, t, isFa, isDark, currentUser, onLike, onComment }: { post: EtudePost; colors: any; t: any; isFa: boolean; isDark: boolean; currentUser: string; onLike: () => void; onComment: (text: string) => void }) {
+// کامپوننت هوشمند تشخیص و رندر فایل تصویری یا ویدئویی
+function MediaRenderer({ url, style, controls, ...props }: { url: string; style?: React.CSSProperties; controls?: boolean; [key: string]: any }) {
+  const isVideo = url?.match(/\.(mp4|webm|ogg|mov|quicktime)/i) || url?.includes('video');
+  if (isVideo) {
+    return <video src={url} controls={controls} loop muted playsInline style={style} {...props} />;
+  }
+  return <img src={url} alt="Theater Asset" style={style} {...props} />;
+}
+
+function PostCard({ post, colors, t, isFa, currentUser, onLike, onComment, onUserClick }: { post: EtudePost; colors: any; t: any; isFa: boolean; currentUser: string; onLike: () => void; onComment: (text: string) => void; onUserClick?: (uname: string) => void }) {
   const [comInput, setComInput] = useState('');
+
+  const handleSubmitComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (comInput.trim()) {
+      onComment(comInput.trim());
+      setComInput('');
+    }
+  };
+
   return (
-    <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: '12px', padding: '12px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '13px' }}>
-        <b>@{post.username}</b>
-        <span style={{ color: colors.meta }}>{post.category}</span>
+    <div style={{ background: colors.card, border: `1px solid ${colors.border}`, borderRadius: '12px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px', boxSizing: 'border-box', width: '100%' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <b style={{ fontSize: '13px', cursor: 'pointer' }} onClick={() => onUserClick && onUserClick(post.username)}>@{post.username}</b>
+        <span style={{ fontSize: '11px', color: colors.meta }}>
+          {CATEGORIES.find(c => c.id === post.category)?.fa || post.category}
+        </span>
       </div>
-      <video src={post.media_url} controls style={{ width: '100%', aspectRatio: '1/1', objectFit: 'cover', borderRadius: '8px', background: '#000' }} />
-      <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-        <button onClick={onLike} style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer' }}>
+
+      <div style={{ width: '100%', aspectRatio: '1/1', borderRadius: '8px', overflow: 'hidden', background: '#000', border: `1px solid ${colors.border}` }}>
+        <MediaRenderer url={post.media_url} controls style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      </div>
+
+      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '2px 0' }}>
+        <button onClick={onLike} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '14px', color: '#fff' }}>
           {post.likes?.includes(currentUser) ? '❤️' : '🤍'} {post.likes?.length || 0}
         </button>
+        <span style={{ fontSize: '13px' }}>💬 {post.comments?.length || 0}</span>
+      </div>
+
+      {post.description && (
+        <p style={{ fontSize: '12.5px', color: '#d1d1d6', lineHeight: '1.4', margin: '2px 0' }}>{post.description}</p>
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+        <div style={{ maxHeight: '60px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+          {post.comments?.map((c: any) => (
+            <div key={c.id} style={{ fontSize: '11.5px' }}>
+              <span style={{ color: colors.meta, cursor: 'pointer' }} onClick={() => onUserClick && onUserClick(c.username)}>@{c.username}: </span>
+              <span>{c.text}</span>
+            </div>
+          ))}
+        </div>
+        
+        <form onSubmit={handleSubmitComment} style={{ display: 'flex', gap: '6px', marginTop: '4px', boxSizing: 'border-box' }}>
+          <input type="text" placeholder={t.addComment} value={comInput} onChange={e => setComInput(e.target.value)} style={{ flex: 1, padding: '6px 10px', borderRadius: '6px', border: 'none', background: colors.input, color: colors.text, outline: 'none', fontSize: '12px', boxSizing: 'border-box' }} />
+          <button type="submit" style={{ background: 'none', color: '#0095f6', fontSize: '12px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>➔</button>
+        </form>
       </div>
     </div>
   );
