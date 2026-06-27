@@ -88,7 +88,6 @@ export function useTheaterCore(currentUser: string) {
 
   // ۴. ساخت پست جدید (اتود)
   const createPost = async (title: string, description: string, category: string, mediaUrl: string): Promise<boolean> => {
-    // اگر ادمین اصلی پلتفرم باشه مستقیماً تایید میشه، در غیر این صورت میره تو صف بررسی
     const status = currentUser === 'mehdisoheilinia' ? 'approved' : 'pending';
     
     const { error } = await supabase.from('posts').insert([
