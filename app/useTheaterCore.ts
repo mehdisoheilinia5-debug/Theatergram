@@ -34,17 +34,13 @@ export function useTheaterCore(currentUser: string) {
     fetchProfiles();
 
     const postChannel = supabase
-      .channel('theatergram-posts-live')
-      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'posts' }, () => {
-        fetchPosts();
-      })
+      .channel('theatergram-live-posts')
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'posts' }, () => fetchPosts())
       .subscribe();
 
     const profileChannel = supabase
-      .channel('theatergram-profiles-live')
-      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'profiles' }, () => {
-        fetchProfiles();
-      })
+      .channel('theatergram-live-profiles')
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'profiles' }, () => fetchProfiles())
       .subscribe();
 
     return () => {
@@ -67,7 +63,7 @@ export function useTheaterCore(currentUser: string) {
       const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
       return data.publicUrl;
     } catch (err) {
-      console.error('Storage Upload Pipeline failed:', err);
+      console.error('Upload Error:', err);
       return null;
     }
   };
