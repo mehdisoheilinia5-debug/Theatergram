@@ -77,8 +77,8 @@ export default function Page() {
 
   const loadData = () => {
     if (typeof window !== 'undefined') {
-      setPosts(JSON.parse(localStorage.getItem('tg_posts') || '[]'));
-      setDbUsers(JSON.parse(localStorage.getItem('tg_users') || '{}'));
+      setPosts(JSON.parse(localStorage.getItem('tg_posts'] || '[]'));
+      setDbUsers(JSON.parse(localStorage.getItem('tg_users'] || '{}'));
     }
   };
 
@@ -89,7 +89,7 @@ export default function Page() {
     e.preventDefault();
     if (!usernameInput.trim()) return;
     
-    const allUsers = JSON.parse(localStorage.getItem('tg_users') || '{}');
+    const allUsers = JSON.parse(localStorage.getItem('tg_users'] || '{}'));
     
     if (!allUsers[usernameInput.toLowerCase()]) {
       allUsers[usernameInput.toLowerCase()] = {
@@ -120,7 +120,7 @@ export default function Page() {
     e.preventDefault();
     if (!currentUser) return;
 
-    const allUsers = JSON.parse(localStorage.getItem('tg_users') || '{}');
+    const allUsers = JSON.parse(localStorage.getItem('tg_users'] || '{}');
     if (allUsers[currentUser]) {
       allUsers[currentUser].name = editName;
       allUsers[currentUser].bio = editBio;
@@ -135,7 +135,7 @@ export default function Page() {
     e.preventDefault();
     if (!postTitle.trim() || !currentUser) return;
 
-    const allPosts = JSON.parse(localStorage.getItem('tg_posts') || '[]');
+    const allPosts = JSON.parse(localStorage.getItem('tg_posts'] || '[]');
     const newPost = {
       id: Date.now().toString(),
       username: currentUser,
@@ -159,7 +159,7 @@ export default function Page() {
 
   const handleToggleLike = (postId: string) => {
     if (!currentUser) return;
-    const allPosts = JSON.parse(localStorage.getItem('tg_posts') || '[]');
+    const allPosts = JSON.parse(localStorage.getItem('tg_posts'] || '[]');
     const updated = allPosts.map((post: any) => {
       if (post.id === postId) {
         const hasLiked = post.likes.includes(currentUser);
@@ -176,7 +176,7 @@ export default function Page() {
   };
 
   const handleApprovePost = (postId: string) => {
-    const allPosts = JSON.parse(localStorage.getItem('tg_posts') || '[]');
+    const allPosts = JSON.parse(localStorage.getItem('tg_posts'] || '[]');
     const updated = allPosts.map((post: any) => {
       if (post.id === postId) {
         post.status = 'approved';
@@ -189,7 +189,7 @@ export default function Page() {
 
   const handleToggleFollow = (targetUsername: string) => {
     if (!currentUser) return;
-    const allUsers = JSON.parse(localStorage.getItem('tg_users') || '{}');
+    const allUsers = JSON.parse(localStorage.getItem('tg_users'] || '{}');
     if (!allUsers[currentUser] || !allUsers[targetUsername]) return;
 
     const isFollowing = allUsers[currentUser].following.includes(targetUsername);
@@ -212,12 +212,12 @@ export default function Page() {
   const isDark = theme === 'dark';
   const isFa = lang === 'fa';
 
-  // لایه‌های رنگی سیستم روز و شب
-  const currentStyles = {
+  // لایه‌های رنگی سیستم روز و شب همراه با تایپ صریح جهت پاس کردن بیلد ری‌اکت و تایپ‌اسکریپت
+  const currentStyles: React.CSSProperties = {
     ...styles.appContainer,
     backgroundColor: isDark ? '#000000' : '#f5f7fb',
     color: isDark ? '#ffffff' : '#1c1c1e',
-    direction: isFa ? 'rtl' : 'ltr' as const
+    direction: isFa ? 'rtl' : 'ltr'
   };
 
   // رندر انیمیشن اسپلش اسکرین اول برنامه (۱ ثانیه)
@@ -232,7 +232,7 @@ export default function Page() {
   // نمای ورود به پلتفرم
   if (!currentUser) {
     return (
-      <div style={{ ...styles.loginWrapper, backgroundColor: isDark ? '#000' : '#f5f7fb', color: isDark ? '#fff' : '#000', direction: isFa ? 'rtl' : 'ltr' as const }}>
+      <div style={{ ...styles.loginWrapper, backgroundColor: isDark ? '#000' : '#f5f7fb', color: isDark ? '#fff' : '#000', direction: isFa ? 'rtl' : 'ltr' }}>
         <form onSubmit={handleLogin} style={{ ...styles.loginCard, background: isDark ? '#121212' : '#fff', borderColor: isDark ? '#1c1c1e' : '#e5e5ea' }}>
           <h1 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '8px', textAlign: 'center' }}>theatergram</h1>
           <p style={{ fontSize: '13px', color: '#888', marginBottom: '24px', textAlign: 'center' }}>
