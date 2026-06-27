@@ -193,6 +193,7 @@ export default function Page() {
                     colors={colors} 
                     t={t} 
                     isFa={isFa} 
+                    isDark={isDark}
                     currentUser={currentUser} 
                     onLike={() => core.toggleLike(post.id, post.likes)}
                     onComment={(txt) => core.appendComment(post.id, post.comments, txt)}
@@ -278,7 +279,7 @@ export default function Page() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '10px' }}>
               <h3 style={{ fontSize: '14px', fontWeight: 'bold', borderBottom: `1px solid ${colors.border}`, paddingBottom: '8px' }}>🎭 Video Portfolio ({profilePosts.length})</h3>
               {profilePosts.map(post => (
-                <PostCard key={post.id} post={post} colors={colors} t={t} isFa={isFa} currentUser={currentUser} onLike={() => core.toggleLike(post.id, post.likes)} onComment={(txt) => core.appendComment(post.id, post.comments, txt)} onUserClick={(uname) => setTargetUser(uname)} />
+                <PostCard key={post.id} post={post} colors={colors} t={t} isFa={isFa} isDark={isDark} currentUser={currentUser} onLike={() => core.toggleLike(post.id, post.likes)} onComment={(txt) => core.appendComment(post.id, post.comments, txt)} onUserClick={(uname) => setTargetUser(uname)} />
               ))}
             </div>
           </div>
@@ -324,7 +325,7 @@ export default function Page() {
 }
 
 // Sub-Component UI Card Controller Engine Block Interface
-function PostCard({ post, colors, t, isFa, currentUser, onLike, onComment, onUserClick }: { post: EtudePost; colors: any; t: any; isFa: boolean; currentUser: string; onLike: () => void; onComment: (text: string) => void; onUserClick: (uname: string) => void }) {
+function PostCard({ post, colors, t, isFa, isDark, currentUser, onLike, onComment, onUserClick }: { post: EtudePost; colors: any; t: any; isFa: boolean; isDark: boolean; currentUser: string; onLike: () => void; onComment: (text: string) => void; onUserClick: (uname: string) => void }) {
   const [comInput, setComInput] = useState('');
   const hasLiked = post.likes?.includes(currentUser);
 
@@ -388,7 +389,7 @@ function PostCard({ post, colors, t, isFa, currentUser, onLike, onComment, onUse
             onChange={e => setComInput(e.target.value)}
             style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: `1px solid ${colors.border}`, background: colors.input, color: colors.text, outline: 'none', fontSize: '12px' }}
           />
-          <button type="submit" style={{ padding: '0 12px', borderRadius: '6px', background: colors.accent, color: isFa && !hasLiked ? (isDark ? '#000' : '#fff') : (isDark ? '#000' : '#fff'), fontSize: '12px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>➔</button>
+          <button type="submit" style={{ padding: '0 12px', borderRadius: '6px', background: colors.accent, color: isDark ? '#000' : '#fff', fontSize: '12px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}>➔</button>
         </form>
       </div>
 
