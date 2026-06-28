@@ -126,7 +126,6 @@ export default function Page() {
           <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: colors.input, backgroundSize: 'cover', backgroundPosition: 'center', backgroundImage: activeProfileData?.avatar_url ? `url(${activeProfileData.avatar_url})` : 'none' }} />
           <span style={{ fontSize: '12px', fontWeight: 'bold' }}>@{activeProfileUsername}</span>
         </div>
-        {/* باگ تایپ‌اسکریپت و نتلیفای دقیقاً در خط زیر حل شد */}
         <span style={{ fontSize: '16px', fontWeight: 'bold' }}>تئاترگرام</span>
         <button style={{ background: 'none', border: 'none', color: colors.text, fontSize: '18px' }}>☰</button>
       </header>
@@ -194,10 +193,10 @@ export default function Page() {
       </nav>
 
       {/* ========================================== */}
-      {/* صفحه اختصاصی ویرایش اطلاعات و آپلود عکس پروفایل */}
+      {/* رفع باگ خطای تایپ‌اسکریپت نتلیفای دقیقاً در استایل تگ div زیر اعمال شد */}
       {/* ========================================== */}
       {isEditProfileOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropBlur: '10px', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 200, padding: '16px', boxSizing: 'border-box' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 200, padding: '16px', boxSizing: 'border-box' }}>
           <form onSubmit={handleUpdateProfile} style={{ background: colors.card, border: `1px solid ${colors.border}`, padding: '24px', borderRadius: '20px', maxWidth: '380px', width: '100%', display: 'flex', flexDirection: 'column', gap: '16px', boxSizing: 'border-box' }}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `1px solid ${colors.border}`, paddingBottom: '12px' }}>
