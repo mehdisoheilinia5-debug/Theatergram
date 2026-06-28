@@ -56,6 +56,7 @@ export function useTheaterCore(currentUser: string) {
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `${currentUser}/${fileName}`;
 
+      // آپلود فایل در باکت مشخص شده
       const { error: uploadError } = await supabase.storage
         .from(bucket)
         .upload(filePath, file, { cacheControl: '3600', upsert: true });
@@ -78,7 +79,7 @@ export function useTheaterCore(currentUser: string) {
           description: description || '',
           category: category,
           media_url: mediaUrl,
-          status: 'pending',
+          status: 'pending', // ارسال اولیه در حالت در انتظار تایید ادمین
           likes: [],
           comments: [],
           created_at: new Date().toISOString()
