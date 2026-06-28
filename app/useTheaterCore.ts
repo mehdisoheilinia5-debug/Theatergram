@@ -70,25 +70,30 @@ export function useTheaterCore(currentUser: string) {
   };
 
   const createPost = async (title: string, description: string, category: string, mediaUrl: string): Promise<boolean> => {
-    // طبق دستور جدید: تمامی پست‌ها بدون استثنا (حتی خود ادمین) ابتدا به وضعیت pending می‌روند
-    const { error } = await supabase.from('posts').insert([
-      {
-        username: currentUser,
-        title,
-        description,
-        category,
-        media_url: mediaUrl,
-        status: 'pending',
-        likes: [],
-        comments: [],
-        created_at: new Date().toISOString()
+    try {
+      const { error } = await supabase.from('posts').insert([
+        {
+          username: currentUser,
+          title: title || 'اثر جدید',
+          description: description || '',
+          category: category,
+          media_url: mediaUrl,
+          status: 'pending',
+          likes: [],
+          comments: [],
+          created_at: new Date().toISOString()
+        }
+      ]);
+      if (error) {
+        console.error('Supabase Insert Error:', error);
+        return false;
       }
-    ]);
-    if (!error) {
       await fetchPosts();
       return true;
+    } catch (e) {
+      console.error('Catch Error on CreatePost:', e);
+      return false;
     }
-    return false;
   };
 
   const toggleLike = async (postId: string, currentLikes: string[]) => {
