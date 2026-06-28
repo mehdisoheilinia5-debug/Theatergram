@@ -126,7 +126,8 @@ export default function Page() {
           <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: colors.input, backgroundSize: 'cover', backgroundPosition: 'center', backgroundImage: activeProfileData?.avatar_url ? `url(${activeProfileData.avatar_url})` : 'none' }} />
           <span style={{ fontSize: '12px', fontWeight: 'bold' }}>@{activeProfileUsername}</span>
         </div>
-        <span style={{ fontSize: '16px', fontTriangle: 'bold', fontWeight: 'bold' }}>تئاترگرام</span>
+        {/* باگ تایپ‌اسکریپت و نتلیفای دقیقاً در خط زیر حل شد */}
+        <span style={{ fontSize: '16px', fontWeight: 'bold' }}>تئاترگرام</span>
         <button style={{ background: 'none', border: 'none', color: colors.text, fontSize: '18px' }}>☰</button>
       </header>
 
