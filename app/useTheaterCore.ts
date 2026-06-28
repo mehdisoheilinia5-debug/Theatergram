@@ -58,7 +58,7 @@ export function useTheaterCore(currentUser: string) {
 
       const { error: uploadError } = await supabase.storage
         .from(bucket)
-        .upload(filePath, file);
+        .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
       if (uploadError) throw uploadError;
       const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
