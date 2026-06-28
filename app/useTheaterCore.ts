@@ -56,7 +56,6 @@ export function useTheaterCore(currentUser: string) {
       const fileName = `${Math.random()}.${fileExt}`;
       const filePath = `${currentUser}/${fileName}`;
 
-      // آپلود فایل در باکت مشخص شده
       const { error: uploadError } = await supabase.storage
         .from(bucket)
         .upload(filePath, file, { cacheControl: '3600', upsert: true });
@@ -72,6 +71,7 @@ export function useTheaterCore(currentUser: string) {
 
   const createPost = async (title: string, description: string, category: string, mediaUrl: string): Promise<boolean> => {
     try {
+      // تمام پست‌های جدید از تمام کاربران ابتدا با وضعیت pending ثبت می‌شوند تا به صفحه مدیریت بروند
       const { error } = await supabase.from('posts').insert([
         {
           username: currentUser,
@@ -79,16 +79,13 @@ export function useTheaterCore(currentUser: string) {
           description: description || '',
           category: category,
           media_url: mediaUrl,
-          status: 'pending', // ارسال اولیه در حالت در انتظار تایید ادمین
+          status: 'pending', 
           likes: [],
           comments: [],
           created_at: new Date().toISOString()
         }
       ]);
-      if (error) {
-        console.error('Supabase Insert Error:', error);
-        return false;
-      }
+      if (error) throw error;
       await fetchPosts();
       return true;
     } catch (e) {
