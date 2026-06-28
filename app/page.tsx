@@ -208,7 +208,7 @@ export default function Page() {
         </div>
 
         {/* منو در سمت چپ هدر */}
-        <div style={{ display: 'flex', alignItems: 'center', justifycontent: 'flex-end' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
           <button onClick={() => setIsMenuOpen(!isMenuOpen)} style={{ background: 'none', border: 'none', color: colors.text, fontSize: '18px', cursor: 'pointer', padding: '4px' }}>☰</button>
         </div>
       </header>
