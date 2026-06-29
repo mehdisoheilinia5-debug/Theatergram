@@ -1,4 +1,3 @@
-```typescript
 export interface EtudePost {
   id: string;
   username: string;
@@ -108,5 +107,3 @@ export const TRANSLATIONS = {
     successAlert: 'Changes successfully saved online.'
   }
 };
-
-```
