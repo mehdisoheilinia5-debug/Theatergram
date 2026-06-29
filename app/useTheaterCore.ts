@@ -71,6 +71,7 @@ export function useTheaterCore(currentUser: string) {
 
   const createPost = async (title: string, description: string, category: string, mediaUrl: string): Promise<boolean> => {
     try {
+      // تمام آثار (حتی خود ادمین) ابتدا با وضعیت pending ثبت شده و به بخش مدیریت منتقل می‌شوند
       const { error } = await supabase.from('posts').insert([
         {
           username: currentUser,
