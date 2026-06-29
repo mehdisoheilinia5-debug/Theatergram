@@ -1,4 +1,3 @@
-```tsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -487,4 +486,3 @@ function PostCard({ post, colors, t, isFa, currentUser, onLike, onComment, onUse
   );
 }
 
-```
