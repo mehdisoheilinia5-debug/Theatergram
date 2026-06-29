@@ -1,3 +1,4 @@
+```typescript
 export interface EtudePost {
   id: string;
   username: string;
@@ -63,7 +64,10 @@ export const TRANSLATIONS = {
     logout: 'خروج از حساب کاربری',
     changeLang: 'تغییر زبان (English)',
     changeTheme: 'تغییر پوسته (روز/شب)',
-    gridTitle: '🎬 نمای شبکه‌ای اتودها و ایده‌ها'
+    gridTitle: '🎬 نمای شبکه‌ای اتودها و ایده‌ها',
+    changePassword: 'تغییر رمز عبور حساب کاربری',
+    newPasswordPlaceholder: 'رمز عبور جدید خود را وارد کنید...',
+    successAlert: 'تغییرات با موفقیت در سیستم آنلاین ذخیره شد.'
   },
   en: {
     explore: 'Explore',
@@ -98,6 +102,11 @@ export const TRANSLATIONS = {
     logout: 'Logout From Account',
     changeLang: 'Change Language (فارسی)',
     changeTheme: 'Toggle Theme',
-    gridTitle: '🎬 Etudes Grid View'
+    gridTitle: '🎬 Etudes Grid View',
+    changePassword: 'Change Account Password',
+    newPasswordPlaceholder: 'Enter new password...',
+    successAlert: 'Changes successfully saved online.'
   }
 };
+
+```
