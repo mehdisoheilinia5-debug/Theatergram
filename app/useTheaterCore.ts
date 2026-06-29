@@ -1,4 +1,3 @@
-```typescript
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -180,4 +179,3 @@ export function useTheaterCore(currentUser: string) {
   };
 }
 
-```
