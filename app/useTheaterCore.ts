@@ -1,3 +1,4 @@
+```typescript
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -71,7 +72,6 @@ export function useTheaterCore(currentUser: string) {
 
   const createPost = async (title: string, description: string, category: string, mediaUrl: string): Promise<boolean> => {
     try {
-      // تمام پست‌های جدید از تمام کاربران ابتدا با وضعیت pending ثبت می‌شوند تا به صفحه مدیریت بروند
       const { error } = await supabase.from('posts').insert([
         {
           username: currentUser,
@@ -179,3 +179,5 @@ export function useTheaterCore(currentUser: string) {
     rejectPost
   };
 }
+
+```
