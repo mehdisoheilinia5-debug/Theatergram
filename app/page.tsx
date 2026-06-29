@@ -154,6 +154,7 @@ export default function Page() {
       if (uploadedUrl) finalAvatarUrl = uploadedUrl;
     }
 
+    // ذخیره‌سازی اطلاعات به همراه نام کاربری جدید
     const success = await core.syncProfileState(editName, editBio, finalAvatarUrl);
     if (success) {
       setIsEditProfileOpen(false);
@@ -167,7 +168,6 @@ export default function Page() {
     e.preventDefault();
     if (!newPassword.trim()) return;
     setChangingPassword(true);
-    // ذخیره رمز عبور جدید به شکل دایمی در جدول اطلاعات کاربر
     const { error } = await supabase
       .from('profiles')
       .update({ password_hash: newPassword })
@@ -205,7 +205,7 @@ export default function Page() {
   if (showSplash) {
     return (
       <div style={{ background: '#000000', color: '#ffffff', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <h1 style={{ fontSize: '32px', fontWeight: 'bold', letterSpacing: '2px', fontFamily: 'serif' }}>TheaterGram</h1>
+        <h1 style={{ fontSize: '26px', fontWeight: 'bold', letterSpacing: '2px', fontFamily: 'serif' }}>TheaterGram</h1>
       </div>
     );
   }
@@ -230,13 +230,18 @@ export default function Page() {
   return (
     <div style={{ background: colors.bg, color: colors.text, minHeight: '100vh', direction: isFa ? 'rtl' : 'ltr', paddingBottom: '80px', boxSizing: 'border-box' }}>
       
+      {/* هدر بالایی با کادر فوق‌العاده مینیمال هویت‌سنجی در سمت راست */}
       <header style={{ position: 'sticky', top: 0, zIndex: 100, background: colors.card, borderBottom: `1px solid ${colors.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', boxSizing: 'border-box', height: '54px' }}>
+        
+        {/* کادر کوچک هویتی و هویت‌سنجی در سمت راست هدر */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', maxWidth: '45%', background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', padding: '4px 8px', borderRadius: '20px', border: `1px solid ${colors.border}` }}>
           <div style={{ width: '26px', height: '26px', borderRadius: '50%', border: `1px solid ${colors.border}`, background: colors.input, backgroundSize: 'cover', backgroundPosition: 'center', backgroundImage: headerDisplayUser?.avatar_url ? `url(${headerDisplayUser.avatar_url})` : 'none', flexShrink: 0 }} />
           <div style={{ display: 'flex', flexDirection: 'column', minWidth: '0' }}>
             <span style={{ fontSize: '11px', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: '1.2' }}>{headerDisplayUser?.name || activeProfileUsername}</span>
             <span style={{ fontSize: '9px', color: colors.meta, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: '1' }}>@{activeProfileUsername}</span>
           </div>
+          
+          {/* دکمه کوچک دنبال کردن در کنار نام کاربری داخل کادر هویت */}
           {targetUser && targetUser !== currentUser && (
             <button onClick={() => core.toggleFollow(targetUser)} style={{ padding: '2px 6px', background: core.profiles[targetUser]?.followers?.includes(currentUser) ? 'none' : '#ffffff', color: core.profiles[targetUser]?.followers?.includes(currentUser) ? colors.text : '#000000', border: `1px solid ${colors.border}`, borderRadius: '12px', fontSize: '9px', fontWeight: 'bold', cursor: 'pointer', marginRight: '4px', marginLeft: '4px', flexShrink: 0 }}>
               {core.profiles[targetUser]?.followers?.includes(currentUser) ? '✓' : '+'}
@@ -244,15 +249,18 @@ export default function Page() {
           )}
         </div>
 
+        {/* نام ثابت برنامه در مرکز به صورت انگلیسی */}
         <div style={{ textAlign: 'center' }}>
           <span style={{ fontSize: '16px', fontWeight: 'bold', fontFamily: 'serif', letterSpacing: '0.5px' }}>TheaterGram</span>
         </div>
 
+        {/* منو در سمت چپ هدر */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
           <button onClick={() => setIsMenuOpen(!isMenuOpen)} style={{ background: 'none', border: 'none', color: colors.text, fontSize: '18px', cursor: 'pointer', padding: '4px' }}>☰</button>
         </div>
       </header>
 
+      {/* منوی همبرگری کشویی */}
       {isMenuOpen && (
         <div style={{ position: 'fixed', top: '55px', [isFa ? 'left' : 'right']: '10px', width: '210px', background: colors.card, border: `1px solid ${colors.border}`, borderRadius: '8px', zIndex: 110, padding: '8px', display: 'flex', flexDirection: 'column', gap: '4px', boxShadow: '0 8px 25px rgba(0,0,0,0.6)' }}>
           <button onClick={() => { setLang(l => l === 'fa' ? 'en' : 'fa'); setIsMenuOpen(false); }} style={{ width: '100%', padding: '10px', background: 'none', border: 'none', color: colors.text, textAlign: isFa ? 'right' : 'left', cursor: 'pointer', fontSize: '12.5px' }}>🌐 {t.changeLang}</button>
@@ -265,6 +273,8 @@ export default function Page() {
       )}
 
       <main style={{ maxWidth: '460px', margin: '0 auto', padding: '12px', boxSizing: 'border-box' }}>
+        
+        {/* ۱. صفحه کاربری و پروفایل */}
         {(activeTab === 'profile' || targetUser) && (
           <div style={{ maxWidth: '100%', boxSizing: 'border-box' }}>
             {targetUser && (
@@ -286,6 +296,7 @@ export default function Page() {
               </div>
             )}
 
+            {/* فرم ارسال پست - مستقیماً به صف بررسی ادمین متصل است */}
             {currentUser === activeProfileUsername && (
               <div style={{ background: colors.card, border: `1px solid ${colors.border}`, padding: '14px', borderRadius: '12px', marginBottom: '15px', boxSizing: 'border-box' }}>
                 <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', marginBottom: '12px', paddingBottom: '4px' }}>
@@ -307,6 +318,7 @@ export default function Page() {
               </div>
             )}
 
+            {/* نمای اینستاگرامی شبکه آثار */}
             <h3 style={{ fontSize: '12px', color: colors.meta, marginBottom: '8px' }}>{t.gridTitle}</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '3px', boxSizing: 'border-box' }}>
               {profilePosts.map(post => (
@@ -321,6 +333,7 @@ export default function Page() {
           </div>
         )}
 
+        {/* ۲. فلو اکسپلور عمومی */}
         {activeTab === 'explore' && !targetUser && (
           <div style={{ maxWidth: '100%', boxSizing: 'border-box' }}>
             <div style={{ marginBottom: '12px', boxSizing: 'border-box' }}>
@@ -338,6 +351,7 @@ export default function Page() {
           </div>
         )}
 
+        {/* ۳. صفحه مدیریت متصل به تمام کاربران */}
         {activeTab === 'admin' && currentUser === 'mehdisoheilinia' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '100%' }}>
             <h2 style={{ fontSize: '14px', fontWeight: 'bold', color: '#ffb300' }}>{t.pendingQueue} ({pendingPosts.length})</h2>
@@ -363,6 +377,7 @@ export default function Page() {
 
       </main>
 
+      {/* ناوبری پایینی پلتفرم */}
       <nav style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '460px', zIndex: 100, background: colors.bg, borderTop: `1px solid ${colors.border}`, display: 'flex', justifyContent: 'space-around', padding: '12px 0', boxSizing: 'border-box' }}>
         <button onClick={() => { setTargetUser(null); setActiveTab('explore'); }} style={{ background: 'none', border: 'none', color: activeTab === 'explore' ? colors.text : colors.meta, fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer' }}>🧭 {t.explore}</button>
         <button onClick={() => { setTargetUser(null); setActiveTab('profile'); }} style={{ background: 'none', border: 'none', color: activeTab === 'profile' && !targetUser ? colors.text : colors.meta, fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer' }}>👤 {t.profile}</button>
