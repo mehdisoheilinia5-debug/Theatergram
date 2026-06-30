@@ -50,17 +50,22 @@ export function useTheaterCore(currentUser: string) {
     };
   }, [currentUser, fetchPosts, fetchProfiles]);
 
-  const uploadMediaAsset = async (file: File, bucket: 'media' | 'avatars' = 'media'): Promise<string | null> => {
+  // حل مشکل نام باکت‌ها: تبدیل پارامترها به حروف بزرگ به صورت خودکار برای سازگاری کامل با سوپابیس
+  const uploadMediaAsset = async (file: File, bucket: 'MEDIA' | 'AVATARS' = 'MEDIA'): Promise<string | null> => {
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `${currentUser}/${fileName}`;
+      const cleanUsername = currentUser.replace(/[^a-zA-Z0-9]/g, '_');
+      const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.${fileExt}`;
+      const filePath = `${cleanUsername}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from(bucket)
         .upload(filePath, file, { cacheControl: '3600', upsert: true });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Storage Engine Upload Error details:', uploadError);
+        throw uploadError;
+      }
       const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
       return data.publicUrl;
     } catch (err) {
@@ -85,7 +90,10 @@ export function useTheaterCore(currentUser: string) {
           created_at: new Date().toISOString()
         }
       ]);
-      if (error) throw error;
+      if (error) {
+        console.error('Database Insertion Error details:', error);
+        throw error;
+      }
       await fetchPosts();
       return true;
     } catch (e) {
@@ -179,4 +187,3 @@ export function useTheaterCore(currentUser: string) {
     rejectPost
   };
 }
-
