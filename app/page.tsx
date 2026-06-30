@@ -120,6 +120,7 @@ export default function Page() {
     }
   };
 
+  // تغییر پارامتر ورودی به 'MEDIA' به جهت رفع کامل باگ آپلود پست
   const handlePostCreation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!mediaFile) {
@@ -128,7 +129,7 @@ export default function Page() {
     }
 
     setUploading(true);
-    const url = await core.uploadMediaAsset(mediaFile, 'media');
+    const url = await core.uploadMediaAsset(mediaFile, 'MEDIA');
     if (url) {
       const success = await core.createPost(postTitle, postDesc, selectedCategory, url);
       if (success) {
@@ -139,22 +140,22 @@ export default function Page() {
         alert(isFa ? 'خطا در ثبت پست در پایگاه داده.' : 'Database Insertion Fail.');
       }
     } else {
-      alert(isFa ? 'خطا در آپلود فایل به سرور. مطمئن شوید باکت‌های media و avatars در Storage ایجاد شده و Public هستند.' : 'Storage Upload Fail. Check Buckets.');
+      alert(isFa ? 'خطا در آپلود فایل به سرور. مطمئن شوید باکت‌های MEDIA و AVATARS در Storage ایجاد شده و Public هستند.' : 'Storage Upload Fail. Check Buckets.');
     }
     setUploading(false);
   };
 
+  // تغییر پارامتر ورودی به 'AVATARS' به جهت رفع باگ آپلود آواتار در ویرایش پروفایل
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setUpdatingProfile(true);
     let finalAvatarUrl = core.profiles[currentUser || '']?.avatar_url || '';
 
     if (avatarFile) {
-      const uploadedUrl = await core.uploadMediaAsset(avatarFile, 'avatars');
+      const uploadedUrl = await core.uploadMediaAsset(avatarFile, 'AVATARS');
       if (uploadedUrl) finalAvatarUrl = uploadedUrl;
     }
 
-    // ذخیره‌سازی اطلاعات به همراه نام کاربری جدید
     const success = await core.syncProfileState(editName, editBio, finalAvatarUrl);
     if (success) {
       setIsEditProfileOpen(false);
@@ -201,6 +202,11 @@ export default function Page() {
   const activeProfileData = core.profiles[activeProfileUsername || ''];
   const headerDisplayUser = targetUser ? core.profiles[targetUser] : core.profiles[currentUser || ''];
   const profilePosts = core.posts.filter(p => p.username === activeProfileUsername && (p.status === 'approved' || (p.status === 'pending' && activeProfileUsername === currentUser)));
+
+  const mobileWrapperStyle: React.CSSProperties = {
+    maxWidth: '100%',
+    boxSizing: 'border-box'
+  };
 
   if (showSplash) {
     return (
@@ -276,7 +282,7 @@ export default function Page() {
         
         {/* ۱. صفحه کاربری و پروفایل */}
         {(activeTab === 'profile' || targetUser) && (
-          <div style={{ maxWidth: '100%', boxSizing: 'border-box' }}>
+          <div style={mobileWrapperStyle}>
             {targetUser && (
               <button onClick={() => setTargetUser(null)} style={{ background: 'none', border: 'none', color: colors.text, cursor: 'pointer', marginBottom: '12px', fontSize: '12.5px', fontWeight: 'bold', display: 'block' }}>{isFa ? '← بازگشت به اکسپلور' : '← Back to Explore'}</button>
             )}
@@ -500,4 +506,3 @@ function PostCard({ post, colors, t, isFa, currentUser, onLike, onComment, onUse
     </div>
   );
 }
-
