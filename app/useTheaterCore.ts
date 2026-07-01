@@ -50,7 +50,7 @@ export function useTheaterCore(currentUser: string) {
     };
   }, [currentUser, fetchPosts, fetchProfiles]);
 
-  // حل مشکل نام باکت‌ها: تبدیل پارامترها به حروف بزرگ به صورت خودکار برای سازگاری کامل با سوپابیس
+  // تنظیم باکت‌ها بر اساس نام دقیق بزرگ در Supabase: MEDIA و AVATARS
   const uploadMediaAsset = async (file: File, bucket: 'MEDIA' | 'AVATARS' = 'MEDIA'): Promise<string | null> => {
     try {
       const fileExt = file.name.split('.').pop();
@@ -76,7 +76,7 @@ export function useTheaterCore(currentUser: string) {
 
   const createPost = async (title: string, description: string, category: string, mediaUrl: string): Promise<boolean> => {
     try {
-      // تمام آثار (حتی خود ادمین) ابتدا با وضعیت pending ثبت شده و به بخش مدیریت منتقل می‌شوند
+      // ثبت پست با وضعیت اولیه در انتظار تایید (pending) به صورت پیش‌فرض و آنلاین
       const { error } = await supabase.from('posts').insert([
         {
           username: currentUser,
