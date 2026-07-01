@@ -61,7 +61,7 @@ export default function Page() {
     red: '#ff3b30'
   };
 
-  // اسپلش اسکرین ۱ ثانیه‌ای
+  // اسپلش اسکرین ۱ ثانیه‌ای کاملاً شیک در مرکز صفحه
   useEffect(() => {
     const timer = setTimeout(() => {
       setShowSplash(false);
@@ -120,7 +120,6 @@ export default function Page() {
     }
   };
 
-  // تغییر پارامتر ورودی به 'MEDIA' به جهت رفع کامل باگ آپلود پست
   const handlePostCreation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!mediaFile) {
@@ -145,7 +144,6 @@ export default function Page() {
     setUploading(false);
   };
 
-  // تغییر پارامتر ورودی به 'AVATARS' به جهت رفع باگ آپلود آواتار در ویرایش پروفایل
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setUpdatingProfile(true);
@@ -403,7 +401,7 @@ export default function Page() {
         </div>
       )}
 
-      {/* پاپ‌آپ ویرایش پروفایل */}
+      {/* پاپ‌آپ ویرایش پروفایل (حل باگ وب‌کیت و تار شدن پس‌زمینه) */}
       {isEditProfileOpen && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 200, padding: '16px', boxSizing: 'border-box' }}>
           <form onSubmit={handleUpdateProfile} style={{ background: colors.card, border: `1px solid ${colors.border}`, padding: '20px', borderRadius: '12px', maxWidth: '340px', width: '100%', display: 'flex', flexDirection: 'column', gap: '12px', boxSizing: 'border-box' }}>
